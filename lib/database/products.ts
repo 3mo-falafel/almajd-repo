@@ -25,7 +25,19 @@ export async function getProducts() {
       ORDER BY created_at DESC
     `)
     
-    return result.rows.map((row: any) => ({
+    return result.rows.map((row: any) => {
+      const normalizedColors = Array.isArray(row.colors)
+        ? row.colors.map((c: any) => {
+            if (!c) return null
+            if (typeof c === 'string') return { name: c, hex: undefined }
+            if (c.name) return { name: c.name, hex: c.hex || c.color || c.code }
+            // fallback attempt
+            const entries = Object.entries(c)
+            const first = entries[0]
+            return { name: String(first?.[1] ?? 'Color'), hex: c.hex || c.color }
+          }).filter(Boolean)
+        : []
+      return ({
       id: row.id.toString(),
       name: row.name,
       price: parseFloat(row.price),
@@ -34,7 +46,7 @@ export async function getProducts() {
       category: row.category,
       subcategory: row.subcategory,
       sizes: row.sizes || [],
-      colors: row.colors || [],
+      colors: normalizedColors,
       images: row.images || [],
       image: row.images?.[0] || "/placeholder.svg",
       materials: ["Turkish Cotton", "Premium Quality"],
@@ -42,7 +54,8 @@ export async function getProducts() {
       inStock: row.stock_quantity > 0,
       isOffer: row.is_todays_offer,
       lowStockLeft: row.low_stock_left,
-    }))
+      })
+    })
   } catch (error) {
     console.error('Error fetching products:', error)
     return []

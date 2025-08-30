@@ -9,7 +9,6 @@ import { QuickLookModal } from "@/components/quick-look-modal"
 import { Reveal } from "@/components/reveal"
 import { useLanguage } from "@/contexts/language-context"
 import type { Product } from "@/types/product"
-import { createClient } from "@/lib/supabase/client"
 import { motion } from "framer-motion"
 
 const CATEGORY_FILTERS = [
@@ -29,7 +28,7 @@ export default function OffersPage() {
   // Price filter state (fixed 0 - 1000)
   const priceBounds = { min: 0, max: 1000 }
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>(priceBounds)
-  const supabase = createClient()
+  // Removed Supabase: use internal API
 
   useEffect(() => {
     loadOffers()
@@ -37,15 +36,11 @@ export default function OffersPage() {
 
   const loadOffers = async () => {
     try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_todays_offer", true)
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-
-      const formatted: Product[] = data.map((item) => ({
+  const res = await fetch('/api/products', { cache: 'no-store' })
+  if (!res.ok) throw new Error('Failed to load offers')
+  const all = await res.json()
+  const offerItems = Array.isArray(all) ? all.filter((p:any)=>p.isOffer) : []
+  const formatted: Product[] = offerItems.map((item:any) => ({
         id: item.id,
         name: item.name,
         price: item.price,

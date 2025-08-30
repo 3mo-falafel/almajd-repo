@@ -73,68 +73,11 @@ function AdminDashboardContent(): ReactElement {
   ] as const
 
   useEffect(() => {
-    const fetchOrderProductDetails = async () => {
-      const productIds = new Set<string>()
-
-      orders.forEach((order) => {
-        if (Array.isArray(order.items)) {
-          order.items.forEach((item: any) => {
-            if (item.product_id) {
-              productIds.add(item.product_id)
-            }
-          })
-        }
-      })
-
-      if (productIds.size > 0) {
-        try {
-          const { createBrowserClient } = await import("@supabase/ssr")
-          const supabase = createBrowserClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          )
-
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-          const validProductIds = Array.from(productIds).filter((id) => uuidRegex.test(id))
-
-          console.log("[v0] Valid product IDs for fetching:", validProductIds)
-          console.log(
-            "[v0] Invalid product IDs filtered out:",
-            Array.from(productIds).filter((id) => !uuidRegex.test(id)),
-          )
-
-          if (validProductIds.length === 0) {
-            console.log("[v0] No valid product IDs to fetch")
-            return
-          }
-
-          const { data: productDetails, error } = await supabase
-            .from("products")
-            .select("id, name, images, price, description")
-            .in("id", validProductIds)
-
-          if (error) {
-            console.error("[v0] Error fetching product details:", error)
-            return
-          }
-
-          const detailsMap: { [key: string]: any } = {}
-          productDetails?.forEach((product) => {
-            detailsMap[product.id] = product
-          })
-
-          setOrderProductDetails(detailsMap)
-          console.log("[v0] Fetched product details for orders:", detailsMap)
-        } catch (error) {
-          console.error("[v0] Error fetching product details:", error)
-        }
-      }
-    }
-
-    if (orders.length > 0) {
-      fetchOrderProductDetails()
-    }
-  }, [orders])
+    // Build quick lookup from already loaded products (no external service)
+    const map: Record<string, any> = {}
+    products.forEach(p => { map[p.id] = p })
+    setOrderProductDetails(map)
+  }, [products])
 
   if (!isAuthenticated) {
     return <AdminLogin />

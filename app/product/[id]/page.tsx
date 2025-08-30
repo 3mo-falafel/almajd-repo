@@ -254,7 +254,7 @@ export default function ProductDetailPage() {
                 {t("products.color")}: <span className="font-normal text-neutral-600">{selectedColor}</span>
               </label>
               <div className="flex gap-3 flex-wrap">
-                {product.colors.map((color) => (
+                {product.colors.map((color: any) => (
                   <motion.button
                     key={color.name}
                     onClick={() => setSelectedColor(color.name)}
@@ -264,7 +264,7 @@ export default function ProductDetailPage() {
                         ? "border-neutral-900 scale-110"
                         : "border-neutral-300 hover:border-neutral-400",
                     )}
-                    style={{ backgroundColor: color.hex }}
+                    style={{ backgroundColor: color.hex || color.color }}
                     title={color.name}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}

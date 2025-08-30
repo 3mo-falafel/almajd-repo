@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { Reveal } from "./reveal"
 import { AnimatedText } from "./animated-text"
-import { createBrowserClient } from "@supabase/ssr"
 import { useLanguage } from "@/contexts/language-context"
 
 interface GalleryItem {
@@ -27,30 +26,15 @@ export function MaterialsSection() {
   useEffect(() => {
     const loadGalleryItems = async () => {
       try {
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        )
-
-        const { data, error } = await supabase
-          .from("gallery")
-          .select("*")
-          .eq("is_active", true)
-          .order("display_order", { ascending: true })
-
-        if (error) {
-          console.error("[v0] Error loading gallery items:", error)
-          return
-        }
-
-        if (data && data.length > 0) {
-          setGalleryItems(data)
-        }
-      } catch (error) {
-        console.error("[v0] Error loading gallery items:", error)
+        const res = await fetch('/api/gallery', { cache: 'no-store' })
+        if (!res.ok) return
+        const data = await res.json()
+        const active = Array.isArray(data) ? data.filter(g => g.isActive || g.is_active) : []
+        setGalleryItems(active.sort((a,b) => (a.display_order||0) - (b.display_order||0)))
+      } catch (e) {
+        console.error('[materials-section] load error', e)
       }
     }
-
     loadGalleryItems()
   }, [])
 

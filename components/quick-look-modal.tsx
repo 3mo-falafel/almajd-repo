@@ -188,7 +188,7 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                     {/* Price */}
                     <div className={cn("flex items-center gap-2", isRTL && "justify-end")}>
                       <span className="text-2xl font-bold text-neutral-900">{formatCurrency(displayPrice)}</span>
-                      {hasDiscount && (
+                      {hasDiscount && product.originalPrice && (
                         <span className="text-lg text-neutral-500 line-through">{formatCurrency(product.originalPrice)}</span>
                       )}
                     </div>
@@ -228,7 +228,7 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                           {t("products.color")}
                         </h4>
                         <div className="flex gap-3 flex-wrap">
-                          {product.colors.map((color) => (
+              {product.colors.map((color: any) => (
                             <button
                               key={color.name}
                               onClick={() => {
@@ -241,7 +241,7 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                                   ? "border-neutral-900 scale-110 ring-2 ring-neutral-900 ring-offset-2"
                                   : "border-neutral-300 hover:border-neutral-400",
                               )}
-                              style={{ backgroundColor: color.hex || color.color }}
+                style={{ backgroundColor: color.hex || color.color }}
                               title={color.name}
                             >
                               {selectedColor === color.name && <div className="w-2 h-2 bg-white rounded-full" />}
