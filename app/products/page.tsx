@@ -28,6 +28,7 @@ export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const pageSize = 16
   const productsRef = useRef<HTMLDivElement | null>(null)
   // Price filter (fixed bounds 0 - 1000 as requested)
@@ -40,16 +41,25 @@ export default function ProductsPage() {
 
   const loadProducts = async () => {
     try {
+      setError(null)
+      console.log("Loading products...")
       const response = await fetch('/api/products')
-      if (!response.ok) throw new Error('Failed to fetch products')
+      console.log("API response status:", response.status)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch products: ${response.status} ${response.statusText}`)
+      }
       
       const data = await response.json()
+      console.log("Products loaded:", data.length, "products")
+      console.log("First product:", data[0])
       setProducts(data)
 
       // Reset range to full fixed bounds
       setPriceRange({ ...priceBounds })
     } catch (error) {
       console.error("Error loading products:", error)
+      setError(error instanceof Error ? error.message : "Failed to load products")
     } finally {
       setLoading(false)
     }
@@ -130,8 +140,34 @@ export default function ProductsPage() {
         <Header />
         <div className="pt-20 lg:pt-24">
           <div className="container-custom py-12">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-neutral-900"></div>
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-neutral-900 mb-4"></div>
+              <p className="text-neutral-600">Loading products...</p>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    )
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-neutral-50">
+        <Header />
+        <div className="pt-20 lg:pt-24">
+          <div className="container-custom py-12">
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Products</h2>
+                <p className="text-neutral-600 mb-4">{error}</p>
+                <button 
+                  onClick={loadProducts}
+                  className="bg-neutral-900 text-white px-6 py-2 rounded-md hover:bg-neutral-800"
+                >
+                  Try Again
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -289,9 +325,15 @@ export default function ProductsPage() {
                 ))}
               </motion.div>
 
-              {filteredProducts.length === 0 && (
+              {filteredProducts.length === 0 && !loading && !error && (
                 <div className="text-center py-12">
                   <p className="text-lg text-neutral-600">{t("products.noProducts")}</p>
+                  <p className="text-sm text-neutral-500 mt-2">
+                    Total products: {products.length} | 
+                    Filtered: {filteredProducts.length} | 
+                    Category: {selectedCategory || "all"} | 
+                    Subcategory: {selectedSubcategory || "all"}
+                  </p>
                 </div>
               )}
 
