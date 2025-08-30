@@ -709,12 +709,16 @@ function AdminDashboardContent(): ReactElement {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
                   <div key={product.id} className="bg-white rounded-xl p-4 shadow-sm">
-                    <div className="aspect-[3/4] bg-neutral-100 rounded-lg mb-4 overflow-hidden">
+                    <div className="aspect-[3/4] bg-neutral-100 rounded-lg mb-4 overflow-hidden relative">
                       <img
-                        src={product.image || "/placeholder.svg"}
+                        src={(product.images && product.images[0]) || product.image || "/placeholder.svg"}
                         alt={product.name}
                         className="w-full h-full object-cover"
+                        onError={(e)=>{(e.target as HTMLImageElement).src='/placeholder.svg'}}
                       />
+                     {(!product.images || !product.images[0]) && (
+                       <span className="absolute inset-0 flex items-center justify-center text-[10px] text-neutral-500 bg-white/60">No Image</span>
+                     )}
                     </div>
                     <h3 className="font-medium mb-2">{product.name}</h3>
                     <p className="text-sm text-neutral-600 mb-2">${product.price}</p>
@@ -857,7 +861,7 @@ function AdminDashboardContent(): ReactElement {
                               order.items.map((item: any, idx: number) => {
                                 const productDetails = orderProductDetails[item.product_id]
                                 const productImage =
-                                  productDetails?.images?.[0] ||
+                                  item.image || item.images?.[0] || productDetails?.images?.[0] ||
                                   `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(item.product_name + " Turkish clothing fashion")}`
 
                                 return (
@@ -1107,7 +1111,7 @@ function AdminDashboardContent(): ReactElement {
                               order.items.map((item: any, idx: number) => {
                                 const productDetails = orderProductDetails[item.product_id]
                                 const productImage =
-                                  productDetails?.images?.[0] ||
+                                  item.image || item.images?.[0] || productDetails?.images?.[0] ||
                                   `/placeholder.svg?height=64&width=64&query=${encodeURIComponent(item.product_name + " Turkish fashion delivered")}`
 
                                 return (

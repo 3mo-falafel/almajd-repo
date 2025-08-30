@@ -1,5 +1,38 @@
 import { query } from './config'
-import type { Product } from '@/types/product'
+// NOTE: Keep server-side color metadata (duplicate of client list) so we can
+// round-trip color names -> objects with hex for the UI without importing any
+// client-only files.
+const COLOR_METADATA: { name: string; hex: string }[] = [
+  { name: 'Black', hex: '#000000' },
+  { name: 'White', hex: '#ffffff' },
+  { name: 'Navy Blue', hex: '#1e3a8a' },
+  { name: 'Light Blue', hex: '#38bdf8' },
+  { name: 'Red', hex: '#dc2626' },
+  { name: 'Burgundy', hex: '#7c2d12' },
+  { name: 'Pink', hex: '#ec4899' },
+  { name: 'Rose', hex: '#f43f5e' },
+  { name: 'Green', hex: '#059669' },
+  { name: 'Lime', hex: '#65a30d' },
+  { name: 'Yellow', hex: '#eab308' },
+  { name: 'Orange', hex: '#f97316' },
+  { name: 'Purple', hex: '#7c3aed' },
+  { name: 'Violet', hex: '#8b5cf6' },
+  { name: 'Gray', hex: '#6b7280' },
+  { name: 'Charcoal', hex: '#374151' },
+  { name: 'Brown', hex: '#92400e' },
+  { name: 'Tan', hex: '#d2b48c' },
+  { name: 'Beige', hex: '#f5f5dc' },
+  { name: 'Cream', hex: '#fffdd0' },
+  { name: 'Olive', hex: '#84cc16' },
+  { name: 'Maroon', hex: '#800000' },
+  { name: 'Gold', hex: '#ffd700' },
+  { name: 'Silver', hex: '#c0c0c0' },
+  { name: 'Coral', hex: '#ff6f61' },
+  { name: 'Lavender', hex: '#b57edc' },
+  { name: 'Mint Green', hex: '#98ff98' },
+  { name: 'Rust', hex: '#b7410e' },
+  { name: 'Taupe', hex: '#8b7d7b' }
+]
 
 // Products functions
 export async function getProducts() {
@@ -34,7 +67,11 @@ export async function getProducts() {
       category: row.category,
       subcategory: row.subcategory,
       sizes: row.sizes || [],
-      colors: row.colors || [],
+      // Convert stored color names back to objects with hex (fallback to name as hex if unknown)
+      colors: (row.colors || []).map((c: string) => {
+        const meta = COLOR_METADATA.find(m => m.name === c)
+        return meta ? { name: meta.name, hex: meta.hex } : { name: c, hex: c }
+      }),
       images: row.images || [],
       image: row.images?.[0] || "/placeholder.svg",
       materials: ["Turkish Cotton", "Premium Quality"],
@@ -51,6 +88,11 @@ export async function getProducts() {
 
 export async function addProduct(productData: any) {
   try {
+    // Normalize colors to array of names for storage (DB column is text[])
+    const colorNames = Array.isArray(productData.colors)
+      ? productData.colors.map((c: any) => typeof c === 'string' ? c : (c?.name || c?.color || '')).filter(Boolean)
+      : []
+    console.log('[products] addProduct: name=%s images=%d colors=%d', productData.name, (productData.images||[]).length, colorNames.length)
     const result = await query(`
       INSERT INTO products (
         name, description, price, original_price, category, subcategory,
@@ -65,8 +107,8 @@ export async function addProduct(productData: any) {
       productData.category,
       productData.subcategory,
       productData.sizes,
-      productData.colors,
-      productData.images || ["/placeholder.svg"],
+      colorNames,
+      (productData.images && productData.images.length > 0) ? productData.images : ["/placeholder.svg"],
       productData.stockQuantity || 10,
       productData.isFeatured || false,
       productData.isTodaysOffer || false,
@@ -82,6 +124,9 @@ export async function addProduct(productData: any) {
 
 export async function updateProduct(id: string, productData: any) {
   try {
+    const colorNames = Array.isArray(productData.colors)
+      ? productData.colors.map((c: any) => typeof c === 'string' ? c : (c?.name || c?.color || '')).filter(Boolean)
+      : []
     await query(`
       UPDATE products SET
         name = $1,
@@ -106,7 +151,7 @@ export async function updateProduct(id: string, productData: any) {
       productData.category,
       productData.subcategory,
       productData.sizes,
-      productData.colors,
+      colorNames,
       productData.images,
       productData.stockQuantity,
       productData.isFeatured,

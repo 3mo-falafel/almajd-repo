@@ -57,40 +57,36 @@ export default function CheckoutPage() {
         color: item.color,
         quantity: item.quantity,
         subtotal: item.product.price * item.quantity,
+  image: item.product.image || (item.product.images && item.product.images[0]) || null,
+  images: item.product.images || (item.product.image ? [item.product.image] : []),
       }))
 
-      // Shipping fee mapping
-      const shippingFees: Record<string, number> = {
-        pickup: 0,
-        village: 5,
-        westbank: 20,
-        jerusalem: 30,
-        occupied: 70,
-      }
+      const shippingFees: Record<string, number> = { pickup: 0, village: 5, westbank: 20, jerusalem: 30, occupied: 70 }
       const shippingFee = shippingFees[shippingMethod] ?? 0
 
-      const { data, error } = await supabase
-        .from("orders")
-        .insert({
-          customer_name: form.name,
-          customer_phone: form.phone,
-          customer_address: form.address,
-          customer_city: form.city,
-          customer_notes:
-            (form.notes ? form.notes + "\n" : "") +
-            `Shipping Method: ${shippingMethod || "not_selected"} | Shipping Fee: ${shippingFee}`,
-          order_items: orderItems,
-          total_amount: getTotalPrice() + shippingFee,
-          status: "pending",
+      // Use internal API (PostgreSQL) instead of direct Supabase insert
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: form.name,
+          phone: form.phone,
+          address: form.address,
+          city: form.city,
+            notes: (form.notes ? form.notes + "\n" : "") + `Shipping Method: ${shippingMethod || 'not_selected'} | Shipping Fee: ${shippingFee}`,
+          items: orderItems,
+          total: getTotalPrice() + shippingFee,
+          status: 'pending'
         })
-        .select()
+      })
 
-      if (error) {
-        console.error("Error saving order:", error)
-        throw error
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        console.error('[checkout] Order API error:', err)
+        throw new Error(err.error || 'Order API failed')
       }
 
-      console.log("[v0] Order saved successfully:", data)
+      console.log('[checkout] Order created:', await response.json().catch(()=>null))
 
       // Clear the cart after successful order
       await clearCart()
