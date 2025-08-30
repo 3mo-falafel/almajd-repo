@@ -1,7 +1,6 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { createClient } from "@/lib/supabase/client"
 import type { Product } from "@/types/product"
 
 interface Order {
@@ -108,7 +107,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [todaysOffers, setTodaysOffersState] = useState<Product[]>([])
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
-  const supabase = createClient()
 
   useEffect(() => {
     // Check if admin is already logged in
@@ -140,29 +138,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const loadProducts = async () => {
     try {
-      const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
-
-      if (error) throw error
-
-  const formattedProducts: Product[] = data.map((product: any) => ({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        originalPrice: product.original_price,
-        description: product.description,
-        category: product.category,
-        subcategory: product.subcategory,
-        sizes: product.sizes || [],
-        colors: product.colors || [],
-        images: product.images || [],
-        image: product.images?.[0] || "/placeholder.svg",
-        materials: ["Turkish Cotton", "Premium Quality"],
-        badge: product.is_todays_offer ? "Sale" : product.is_featured ? "Popular" : "",
-        inStock: product.stock_quantity > 0,
-        isOffer: product.is_todays_offer,
-  lowStockLeft: product.low_stock_left ?? undefined,
-      }))
-
+      const response = await fetch('/api/products')
+      if (!response.ok) throw new Error('Failed to fetch products')
+      const formattedProducts = await response.json() as Product[]
       setProducts(formattedProducts)
 
       // Set today's offers
@@ -176,28 +154,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const loadOrders = async () => {
     try {
       console.log("[v0] Loading orders from database...")
-      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false })
-
-      if (error) {
-        console.error("[v0] Error loading orders:", error)
-        throw error
-      }
-
-      console.log("[v0] Raw orders data:", data)
-
-  const formattedOrders: Order[] = data.map((order: any) => ({
-        id: order.id,
-        customerName: order.customer_name,
-        phone: order.customer_phone,
-        address: order.customer_address,
-        city: order.customer_city || "N/A",
-        notes: order.customer_notes,
-        items: order.order_items || [],
-        total: Number(order.total_amount),
-        status: order.status,
-        createdAt: new Date(order.created_at),
-      }))
-
+      const response = await fetch('/api/orders')
+      if (!response.ok) throw new Error('Failed to fetch orders')
+      const formattedOrders = await response.json()
       console.log("[v0] Formatted orders:", formattedOrders)
       setOrders(formattedOrders)
     } catch (error) {
@@ -208,32 +167,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const addProduct = async (productData: any) => {
     try {
-      const baseInsert: any = {
-        name: productData.name,
-        description: productData.description,
-        price: productData.price,
-        original_price: productData.originalPrice || productData.price,
-        category: productData.category,
-        subcategory: productData.subcategory,
-        sizes: productData.sizes,
-        colors: productData.colors,
-        images: productData.images || ["/placeholder.svg"],
-        stock_quantity: productData.stockQuantity || 10,
-        is_featured: productData.isFeatured || false,
-        is_todays_offer: productData.isTodaysOffer || false,
-      }
-      if (productData.lowStockEnabled) {
-        baseInsert.low_stock_left = productData.lowStockLeft ?? 0
-      }
-
-      let { error } = await supabase.from("products").insert(baseInsert)
-      if (error && (error as any).message?.includes("low_stock_left")) {
-        // Retry without the field if column not yet created
-        const retry = { ...baseInsert }
-        delete (retry as any).low_stock_left
-        ;({ error } = await supabase.from("products").insert(retry))
-      }
-      if (error) throw error
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      })
+      if (!response.ok) throw new Error('Failed to add product')
       await loadProducts()
     } catch (error) {
       console.error("Error adding product:", error)
@@ -242,32 +181,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const updateProduct = async (id: string, productData: any) => {
     try {
-      const baseUpdate: any = {
-        name: productData.name,
-        description: productData.description,
-        price: productData.price,
-        original_price: productData.originalPrice,
-        category: productData.category,
-        subcategory: productData.subcategory,
-        sizes: productData.sizes,
-        colors: productData.colors,
-        images: productData.images,
-        stock_quantity: productData.stockQuantity,
-        is_featured: productData.isFeatured,
-        is_todays_offer: productData.isTodaysOffer,
-      }
-      if (productData.lowStockEnabled) {
-        baseUpdate.low_stock_left = productData.lowStockLeft ?? 0
-      } else {
-        baseUpdate.low_stock_left = null
-      }
-      let { error } = await supabase.from("products").update(baseUpdate).eq("id", id)
-      if (error && (error as any).message?.includes("low_stock_left")) {
-        const retry = { ...baseUpdate }
-        delete (retry as any).low_stock_left
-        ;({ error } = await supabase.from("products").update(retry).eq("id", id))
-      }
-      if (error) throw error
+      const response = await fetch('/api/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...productData })
+      })
+      if (!response.ok) throw new Error('Failed to update product')
       await loadProducts()
     } catch (error) {
       console.error("Error updating product:", error)
@@ -276,9 +195,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const deleteProduct = async (id: string) => {
     try {
-      const { error } = await supabase.from("products").delete().eq("id", id)
-
-      if (error) throw error
+      const response = await fetch(`/api/products?id=${id}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Failed to delete product')
       await loadProducts()
     } catch (error) {
       console.error("Error deleting product:", error)
@@ -287,12 +205,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const updateOrderStatus = async (orderId: string, status: Order["status"]) => {
     try {
-      const { error } = await supabase.from("orders").update({ status }).eq("id", orderId)
-
-      if (error) throw error
-
+      const response = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status })
+      })
+      if (!response.ok) throw new Error('Failed to update order status')
+      
       // Update local state
-  setOrders((prev: Order[]) => prev.map((order: Order) => (order.id === orderId ? { ...order, status } : order)))
+      setOrders((prev: Order[]) => prev.map((order: Order) => (order.id === orderId ? { ...order, status } : order)))
     } catch (error) {
       console.error("Error updating order status:", error)
     }
@@ -300,14 +221,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const setTodaysOffers = async (productIds: string[]) => {
     try {
-      // First, remove all current offers
-      await supabase.from("products").update({ is_todays_offer: false }).eq("is_todays_offer", true)
-
-      // Then set new offers
-      if (productIds.length > 0) {
-        await supabase.from("products").update({ is_todays_offer: true }).in("id", productIds)
-      }
-
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'setTodaysOffers', productIds })
+      })
+      if (!response.ok) throw new Error('Failed to set todays offers')
       await loadProducts()
     } catch (error) {
       console.error("Error updating today's offers:", error)
@@ -316,20 +235,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const loadGalleryItems = async () => {
     try {
-      const { data, error } = await supabase.from("gallery").select("*").order("display_order", { ascending: true })
-
-      if (error) throw error
-
-  const formattedItems: GalleryItem[] = data.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        titleAr: item.title_ar,
-        imageUrl: item.image_url,
-        isActive: item.is_active,
-        display_order: item.display_order,
-        createdAt: new Date(item.created_at),
-      }))
-
+      const response = await fetch('/api/gallery')
+      if (!response.ok) throw new Error('Failed to fetch gallery items')
+      const formattedItems = await response.json()
       setGalleryItems(formattedItems)
     } catch (error) {
       console.error("Error loading gallery items:", error)
@@ -338,15 +246,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const addGalleryItem = async (itemData: Omit<GalleryItem, "id" | "createdAt">) => {
     try {
-      const { error } = await supabase.from("gallery").insert({
-        title: itemData.title,
-        title_ar: itemData.titleAr,
-        image_url: itemData.imageUrl,
-        is_active: itemData.isActive,
-        display_order: itemData.display_order,
+      const response = await fetch('/api/gallery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemData)
       })
-
-      if (error) throw error
+      if (!response.ok) throw new Error('Failed to add gallery item')
       await loadGalleryItems()
     } catch (error) {
       console.error("Error adding gallery item:", error)
@@ -355,16 +260,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const updateGalleryItem = async (id: string, itemData: Partial<GalleryItem>) => {
     try {
-      const updateData: any = {}
-      if (itemData.title !== undefined) updateData.title = itemData.title
-      if (itemData.titleAr !== undefined) updateData.title_ar = itemData.titleAr
-      if (itemData.imageUrl !== undefined) updateData.image_url = itemData.imageUrl
-      if (itemData.isActive !== undefined) updateData.is_active = itemData.isActive
-      if (itemData.display_order !== undefined) updateData.display_order = itemData.display_order
-
-      const { error } = await supabase.from("gallery").update(updateData).eq("id", id)
-
-      if (error) throw error
+      const response = await fetch('/api/gallery', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...itemData })
+      })
+      if (!response.ok) throw new Error('Failed to update gallery item')
       await loadGalleryItems()
     } catch (error) {
       console.error("Error updating gallery item:", error)
@@ -373,9 +274,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const deleteGalleryItem = async (id: string) => {
     try {
-      const { error } = await supabase.from("gallery").delete().eq("id", id)
-
-      if (error) throw error
+      const response = await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Failed to delete gallery item')
       await loadGalleryItems()
     } catch (error) {
       console.error("Error deleting gallery item:", error)

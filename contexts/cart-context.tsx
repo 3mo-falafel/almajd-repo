@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from "react"
-import { createBrowserClient } from "@supabase/ssr"
 import type { Product, CartItem } from "@/types/product"
 
 interface CartState {
@@ -115,11 +114,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     isLoading: false,
   })
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
-
   useEffect(() => {
     loadCartFromDatabase()
   }, [])
@@ -135,54 +129,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_LOADING", payload: true })
       const sessionId = getSessionId()
 
-      const { data: cartItems, error } = await supabase
-        .from("cart_items")
-        .select(`
-          id,
-          size,
-          color,
-          quantity,
-          products (
-            id,
-            name,
-            price,
-            original_price,
-            images,
-            category,
-            subcategory,
-            sizes,
-            colors,
-            stock_quantity,
-            description
-          )
-        `)
-        .eq("session_id", sessionId)
-
-      if (error) {
-        console.error("[v0] Error loading cart:", error)
-        return
-      }
-
-      const formattedItems: CartItem[] =
-        cartItems?.map((item: any) => ({
-          product: {
-            id: item.products.id,
-            name: item.products.name,
-            price: item.products.price,
-            originalPrice: item.products.original_price,
-            image: item.products.images?.[0] || "/diverse-clothing-rack.png",
-            category: item.products.category,
-            subcategory: item.products.subcategory,
-            sizes: item.products.sizes,
-            colors: item.products.colors,
-            inStock: item.products.stock_quantity > 0,
-            description: item.products.description,
-          },
-          size: item.size,
-          color: item.color,
-          quantity: item.quantity,
-        })) || []
-
+      const response = await fetch(`/api/cart?sessionId=${sessionId}`)
+      if (!response.ok) throw new Error('Failed to fetch cart items')
+      const formattedItems = await response.json() as CartItem[]
       dispatch({ type: "SET_ITEMS", payload: formattedItems })
     } catch (error) {
       console.error("[v0] Error loading cart:", error)
@@ -194,26 +143,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const saveCartToDatabase = async () => {
     try {
       const sessionId = getSessionId()
-
-      // Clear existing cart items for this session
-      await supabase.from("cart_items").delete().eq("session_id", sessionId)
-
-      // Insert new cart items
-      if (state.items.length > 0) {
-        const cartData = state.items.map((item) => ({
-          session_id: sessionId,
-          product_id: item.product.id,
-          size: item.size,
-          color: item.color,
-          quantity: item.quantity,
-        }))
-
-        const { error } = await supabase.from("cart_items").insert(cartData)
-
-        if (error) {
-          console.error("[v0] Error saving cart:", error)
-        }
-      }
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, cartItems: state.items })
+      })
+      if (!response.ok) throw new Error('Failed to save cart items')
     } catch (error) {
       console.error("[v0] Error saving cart:", error)
     }
@@ -234,8 +169,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = async () => {
     try {
       const sessionId = getSessionId()
-      await supabase.from("cart_items").delete().eq("session_id", sessionId)
-
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, action: 'clear' })
+      })
+      if (!response.ok) throw new Error('Failed to clear cart')
       dispatch({ type: "CLEAR_CART" })
     } catch (error) {
       console.error("[v0] Error clearing cart:", error)
