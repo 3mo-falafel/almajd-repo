@@ -32,16 +32,6 @@ export async function GET(
     }
     
     const row = result.rows[0]
-    const normalizedColors = Array.isArray(row.colors)
-      ? row.colors.map((c: any) => {
-          if (!c) return null
-          if (typeof c === 'string') return { name: c, hex: undefined }
-          if (c.name) return { name: c.name, hex: c.hex || c.color || c.code }
-          const entries = Object.entries(c)
-          const first = entries[0]
-          return { name: String(first?.[1] ?? 'Color'), hex: c.hex || c.color }
-        }).filter(Boolean)
-      : []
     const product = {
       id: row.id.toString(),
       name: row.name,
@@ -51,7 +41,25 @@ export async function GET(
       category: row.category,
       subcategory: row.subcategory,
       sizes: row.sizes || [],
-      colors: normalizedColors,
+      colors: Array.isArray(row.colors) ? row.colors.map((color: any) => {
+        if (typeof color === 'string') {
+          try {
+            const parsed = JSON.parse(color)
+            // If the parsed result is an object with name and hex, return it
+            if (parsed && typeof parsed === 'object' && parsed.name && parsed.hex) {
+              return parsed
+            }
+            // If the parsed result is a string (double-encoded JSON), parse again
+            if (typeof parsed === 'string') {
+              return JSON.parse(parsed)
+            }
+            return parsed
+          } catch {
+            return { name: color, hex: '#ffffff' }
+          }
+        }
+        return color
+      }) : [],
       images: row.images || [],
       image: row.images?.[0] || "/placeholder.svg",
       materials: ["Turkish Cotton", "Premium Quality"],

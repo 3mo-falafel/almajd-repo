@@ -73,11 +73,58 @@ function AdminDashboardContent(): ReactElement {
   ] as const
 
   useEffect(() => {
-    // Build quick lookup from already loaded products (no external service)
-    const map: Record<string, any> = {}
-    products.forEach(p => { map[p.id] = p })
-    setOrderProductDetails(map)
-  }, [products])
+    const fetchOrderProductDetails = async () => {
+      const productIds = new Set<string>()
+
+      orders.forEach((order) => {
+        if (Array.isArray(order.items)) {
+          order.items.forEach((item: any) => {
+            if (item.productId) {
+              productIds.add(item.productId)
+            }
+          })
+        }
+      })
+
+      if (productIds.size > 0) {
+        try {
+          console.log("[v0] Fetching product details for IDs:", Array.from(productIds))
+
+          const detailsMap: { [key: string]: any } = {}
+          
+          // Fetch product details from our PostgreSQL API
+          for (const productId of productIds) {
+            try {
+              const response = await fetch(`/api/products/${productId}`)
+              if (response.ok) {
+                const productData = await response.json()
+                detailsMap[productId] = {
+                  id: productData.id,
+                  name: productData.name,
+                  images: productData.images,
+                  price: productData.price,
+                  description: productData.description
+                }
+              } else {
+                console.error(`[v0] Failed to fetch product ${productId}:`, response.status)
+              }
+            } catch (error) {
+              console.error(`[v0] Error fetching product ${productId}:`, error)
+            }
+          }
+
+          setOrderProductDetails(detailsMap)
+          console.log("[v0] Fetched product details for orders:", detailsMap)
+        } catch (error) {
+          console.error("[v0] Error fetching product details:", error)
+        }
+      }
+    }
+
+    if (orders.length > 0) {
+      fetchOrderProductDetails()
+    }
+  }, [orders])
 
   if (!isAuthenticated) {
     return <AdminLogin />
@@ -798,10 +845,10 @@ function AdminDashboardContent(): ReactElement {
                           <div className="space-y-4">
                             {Array.isArray(order.items) &&
                               order.items.map((item: any, idx: number) => {
-                                const productDetails = orderProductDetails[item.product_id]
+                                const productDetails = orderProductDetails[item.productId]
                                 const productImage =
                                   productDetails?.images?.[0] ||
-                                  `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(item.product_name + " Turkish clothing fashion")}`
+                                  `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(item.productName + " Turkish clothing fashion")}`
 
                                 return (
                                   <div
@@ -811,17 +858,17 @@ function AdminDashboardContent(): ReactElement {
                                     <div className="w-20 h-20 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border">
                                       <img
                                         src={productImage || "/placeholder.svg"}
-                                        alt={item.product_name}
+                                        alt={item.productName}
                                         className="w-full h-full object-cover hover:scale-105 transition-transform"
                                         onError={(e) => {
                                           const target = e.target as HTMLImageElement
-                                          target.src = `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(item.product_name + " Turkish fashion")}`
+                                          target.src = `/placeholder.svg?height=80&width=80&query=${encodeURIComponent(item.productName + " Turkish fashion")}`
                                         }}
                                       />
                                     </div>
 
                                     <div className="flex-1 space-y-2">
-                                      <h5 className="text-lg font-semibold text-neutral-900">{item.product_name}</h5>
+                                      <h5 className="text-lg font-semibold text-neutral-900">{item.productName}</h5>
                                       <div className="flex flex-wrap items-center gap-4">
                                         <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
                                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -858,7 +905,7 @@ function AdminDashboardContent(): ReactElement {
                                         <span>•</span>
                                         <span>
                                           {t("admin.orders.productId")}: {" "}
-                                          <span className="font-mono text-xs">{item.product_id?.slice(0, 8)}</span>
+                                          <span className="font-mono text-xs">{item.productId?.slice(0, 8)}</span>
                                         </span>
                                       </div>
                                     </div>
@@ -1048,10 +1095,10 @@ function AdminDashboardContent(): ReactElement {
                           <div className="space-y-3">
                             {Array.isArray(order.items) &&
                               order.items.map((item: any, idx: number) => {
-                                const productDetails = orderProductDetails[item.product_id]
+                                const productDetails = orderProductDetails[item.productId]
                                 const productImage =
                                   productDetails?.images?.[0] ||
-                                  `/placeholder.svg?height=64&width=64&query=${encodeURIComponent(item.product_name + " Turkish fashion delivered")}`
+                                  `/placeholder.svg?height=64&width=64&query=${encodeURIComponent(item.productName + " Turkish fashion delivered")}`
 
                                 return (
                                   <div
@@ -1061,16 +1108,16 @@ function AdminDashboardContent(): ReactElement {
                                     <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-lg overflow-hidden flex-shrink-0 shadow-sm border border-green-200">
                                       <img
                                         src={productImage || "/placeholder.svg"}
-                                        alt={item.product_name}
+                                        alt={item.productName}
                                         className="w-full h-full object-cover"
                                         onError={(e) => {
                                           const target = e.target as HTMLImageElement
-                                          target.src = `/placeholder.svg?height=64&width=64&query=${encodeURIComponent(item.product_name + " Turkish fashion")}`
+                                          target.src = `/placeholder.svg?height=64&width=64&query=${encodeURIComponent(item.productName + " Turkish fashion")}`
                                         }}
                                       />
                                     </div>
                                     <div className="flex-1">
-                                      <p className="font-semibold text-sm text-neutral-900">{item.product_name}</p>
+                                      <p className="font-semibold text-sm text-neutral-900">{item.productName}</p>
                                       <div className="flex items-center gap-3 mt-1">
                                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                                           {item.size}

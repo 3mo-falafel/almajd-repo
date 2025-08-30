@@ -10,10 +10,10 @@ import { useLanguage } from "@/contexts/language-context"
 interface GalleryItem {
   id: string
   title: string
-  title_ar: string
-  image_url: string
+  titleAr: string
+  imageUrl: string
   display_order: number
-  is_active: boolean
+  isActive: boolean
 }
 
 export function MaterialsSection() {
@@ -26,15 +26,22 @@ export function MaterialsSection() {
   useEffect(() => {
     const loadGalleryItems = async () => {
       try {
-        const res = await fetch('/api/gallery', { cache: 'no-store' })
-        if (!res.ok) return
-        const data = await res.json()
-        const active = Array.isArray(data) ? data.filter(g => g.isActive || g.is_active) : []
-        setGalleryItems(active.sort((a,b) => (a.display_order||0) - (b.display_order||0)))
-      } catch (e) {
-        console.error('[materials-section] load error', e)
+        const response = await fetch('/api/gallery')
+        if (!response.ok) {
+          throw new Error('Failed to fetch gallery items')
+        }
+        
+        const data = await response.json()
+        const activeItems = data.filter((item: GalleryItem) => item.isActive)
+        
+        if (activeItems.length > 0) {
+          setGalleryItems(activeItems)
+        }
+      } catch (error) {
+        console.error("Error loading gallery items:", error)
       }
     }
+
     loadGalleryItems()
   }, [])
 
@@ -132,8 +139,8 @@ export function MaterialsSection() {
               transition={{ duration: 0.7, ease: "easeInOut" }}
             >
               <Image
-                src={currentItem.image_url || "/placeholder.svg"}
-                alt={language === "ar" ? currentItem.title_ar : currentItem.title}
+                src={currentItem.imageUrl || "/placeholder.svg"}
+                alt={language === "ar" ? currentItem.titleAr : currentItem.title}
                 fill
                 className="object-cover"
                 priority
@@ -160,7 +167,7 @@ export function MaterialsSection() {
                   transition={{ duration: 0.55, ease: "easeOut" }}
                   className="font-bold tracking-tight mb-2 sm:mb-4 text-2xl sm:text-4xl md:text-5xl lg:text-6xl"
                 >
-                  <AnimatedText text={language === "ar" ? currentItem.title_ar : currentItem.title} delay={0.15} />
+                  <AnimatedText text={language === "ar" ? currentItem.titleAr : currentItem.title} delay={0.15} />
                 </motion.h2>
               </AnimatePresence>
             </div>
