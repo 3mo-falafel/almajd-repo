@@ -43,7 +43,7 @@ export default function ProductsPage() {
     try {
       setError(null)
       console.log("Loading products...")
-      const response = await fetch('/api/products', { cache: 'no-store' })
+      const response = await fetch('/api/products')
       console.log("API response status:", response.status)
       
       if (!response.ok) {

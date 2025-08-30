@@ -141,10 +141,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const response = await fetch('/api/products')
       if (!response.ok) throw new Error('Failed to fetch products')
       const formattedProducts = await response.json() as Product[]
-      setProducts(formattedProducts.map(p => ({
-        ...p,
-        image: p.image || (Array.isArray(p.images) ? p.images[0] : p.image)
-      })))
+      setProducts(formattedProducts)
 
       // Set today's offers
       const offers = formattedProducts.filter((p) => p.isOffer)
@@ -170,20 +167,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const addProduct = async (productData: any) => {
     try {
-      console.log('[admin] Adding product payload:', productData)
       const response = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData)
       })
       if (!response.ok) throw new Error('Failed to add product')
-      const created = await response.json().catch(() => null)
-      console.log('[admin] Product added, returned:', created)
-       await loadProducts()
-      alert('Product added successfully')
+      await loadProducts()
     } catch (error) {
       console.error("Error adding product:", error)
-      alert('Error adding product: ' + (error as any)?.message)
     }
   }
 
