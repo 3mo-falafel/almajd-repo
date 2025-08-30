@@ -15,6 +15,7 @@ import { useCart } from "@/contexts/cart-context"
 import { useLanguage } from "@/contexts/language-context"
 import { formatCurrency } from "@/lib/utils"
 import { Reveal } from "@/components/reveal"
+import { createClient } from "@/lib/supabase/client"
 
 interface CheckoutForm {
   name: string
@@ -37,7 +38,7 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [shippingMethod, setShippingMethod] = useState<"pickup" | "village" | "westbank" | "jerusalem" | "occupied" | "">("")
-  // Removed Supabase dependency
+  const supabase = createClient()
 
   const handleInputChange = (field: keyof CheckoutForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -68,29 +69,28 @@ export default function CheckoutPage() {
       }
       const shippingFee = shippingFees[shippingMethod] ?? 0
 
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: form.name,
-          phone: form.phone,
-          address: form.address,
-          city: form.city,
-          notes: (form.notes ? form.notes + "\n" : "") + `Shipping Method: ${shippingMethod || 'not_selected'} | Shipping Fee: ${shippingFee}`,
-          items: orderItems.map(i => ({
-            productId: i.product_id,
-            productName: i.product_name,
-            productPrice: i.product_price,
-            size: i.size,
-            color: i.color,
-            quantity: i.quantity,
-            subtotal: i.subtotal,
-          })),
-          total: getTotalPrice() + shippingFee,
+      const { data, error } = await supabase
+        .from("orders")
+        .insert({
+          customer_name: form.name,
+          customer_phone: form.phone,
+          customer_address: form.address,
+          customer_city: form.city,
+          customer_notes:
+            (form.notes ? form.notes + "\n" : "") +
+            `Shipping Method: ${shippingMethod || "not_selected"} | Shipping Fee: ${shippingFee}`,
+          order_items: orderItems,
+          total_amount: getTotalPrice() + shippingFee,
+          status: "pending",
         })
-      })
-      if (!res.ok) throw new Error('Failed to place order')
-      console.log('[checkout] order placed')
+        .select()
+
+      if (error) {
+        console.error("Error saving order:", error)
+        throw error
+      }
+
+      console.log("[v0] Order saved successfully:", data)
 
       // Clear the cart after successful order
       await clearCart()

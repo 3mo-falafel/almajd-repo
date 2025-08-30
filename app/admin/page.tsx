@@ -192,18 +192,56 @@ function AdminDashboardContent(): ReactElement {
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []) as File[]
-      setImageFiles((prev: File[]) => [...prev, ...files])
-
-      // Create preview URLs
+      
       files.forEach((file: File) => {
-        const reader = new FileReader()
-        reader.onload = (ev: ProgressEvent<FileReader>) => {
-          const result = ev.target?.result
-          if (typeof result === "string") {
-            setUploadedImages((prev: string[]) => [...prev, result])
-          }
+        // Check file size (limit to 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`Image "${file.name}" is too large. Please use images smaller than 5MB.`)
+          return
         }
-        reader.readAsDataURL(file as Blob)
+
+        // Check if it's an image
+        if (!file.type.startsWith('image/')) {
+          alert(`File "${file.name}" is not an image.`)
+          return
+        }
+
+        // Compress and resize the image
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        const img = new Image()
+        
+        img.onload = () => {
+          // Calculate new dimensions (max 1200px width/height)
+          const maxSize = 1200
+          let { width, height } = img
+          
+          if (width > height) {
+            if (width > maxSize) {
+              height = (height * maxSize) / width
+              width = maxSize
+            }
+          } else {
+            if (height > maxSize) {
+              width = (width * maxSize) / height
+              height = maxSize
+            }
+          }
+          
+          // Set canvas size and draw compressed image
+          canvas.width = width
+          canvas.height = height
+          ctx?.drawImage(img, 0, 0, width, height)
+          
+          // Convert to base64 with compression (0.8 quality)
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8)
+          
+          // Add to uploaded images
+          setUploadedImages((prev: string[]) => [...prev, compressedDataUrl])
+          setImageFiles((prev: File[]) => [...prev, file])
+        }
+        
+        img.src = URL.createObjectURL(file)
       })
     }
 
@@ -1329,14 +1367,55 @@ const GalleryForm = ({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        setPreviewUrl(result)
-        setFormData({ ...formData, imageUrl: result })
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`Image "${file.name}" is too large. Please use images smaller than 5MB.`)
+        return
       }
-      reader.readAsDataURL(file)
+
+      // Check if it's an image
+      if (!file.type.startsWith('image/')) {
+        alert(`File "${file.name}" is not an image.`)
+        return
+      }
+
+      setImageFile(file)
+      
+      // Compress and resize the image
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      
+      img.onload = () => {
+        // Calculate new dimensions (max 1200px width/height)
+        const maxSize = 1200
+        let { width, height } = img
+        
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width
+            width = maxSize
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height
+            height = maxSize
+          }
+        }
+        
+        // Set canvas size and draw compressed image
+        canvas.width = width
+        canvas.height = height
+        ctx?.drawImage(img, 0, 0, width, height)
+        
+        // Convert to base64 with compression (0.8 quality)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8)
+        
+        setPreviewUrl(compressedDataUrl)
+        setFormData({ ...formData, imageUrl: compressedDataUrl })
+      }
+      
+      img.src = URL.createObjectURL(file)
     }
   }
 
