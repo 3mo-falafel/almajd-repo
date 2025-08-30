@@ -12,7 +12,6 @@ import { QuickLookModal } from "@/components/quick-look-modal"
 import { Reveal } from "@/components/reveal"
 import { useLanguage } from "@/contexts/language-context"
 import type { Product } from "@/types/product"
-import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 
 export default function ProductsPage() {
@@ -35,41 +34,20 @@ export default function ProductsPage() {
   const priceBounds = { min: 0, max: 1000 }
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>(priceBounds)
 
-  const supabase = createClient()
-
   useEffect(() => {
     loadProducts()
   }, [])
 
   const loadProducts = async () => {
     try {
-      const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
+      const response = await fetch('/api/products')
+      if (!response.ok) throw new Error('Failed to fetch products')
+      
+      const data = await response.json()
+      setProducts(data)
 
-      if (error) throw error
-
-      const formattedProducts: Product[] = data.map((item) => ({
-        id: item.id, // This is now a UUID from Supabase
-        name: item.name,
-        price: item.price,
-        originalPrice: item.original_price,
-        description: item.description,
-        category: item.category,
-        subcategory: item.subcategory,
-        sizes: item.sizes || [],
-        colors: item.colors || [],
-        images: item.images || [],
-        image: item.images?.[0] || "/placeholder.svg",
-        materials: ["Turkish Cotton", "Premium Quality"],
-        badge: item.is_todays_offer ? "Sale" : item.is_featured ? "Popular" : "",
-        inStock: item.stock_quantity > 0,
-        isOffer: item.is_todays_offer,
-  lowStockLeft: typeof item.low_stock_left === 'number' ? item.low_stock_left : undefined,
-      }))
-
-      setProducts(formattedProducts)
-
-  // Reset range to full fixed bounds
-  setPriceRange({ ...priceBounds })
+      // Reset range to full fixed bounds
+      setPriceRange({ ...priceBounds })
     } catch (error) {
       console.error("Error loading products:", error)
     } finally {

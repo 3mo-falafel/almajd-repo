@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useCart } from "@/contexts/cart-context"
 import { useLanguage } from "@/contexts/language-context"
-import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import type { Product } from "@/types/product"
 
@@ -28,8 +27,6 @@ export default function ProductDetailPage() {
   const [addedToCart, setAddedToCart] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
 
-  const supabase = createClient()
-
   useEffect(() => {
     loadProduct()
   }, [params.id])
@@ -38,52 +35,22 @@ export default function ProductDetailPage() {
     try {
       const productId = params.id as string
 
-      // Check if the ID looks like a UUID (basic validation)
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-      if (!uuidRegex.test(productId)) {
-        console.error("Invalid product ID format:", productId)
-        setProduct(null)
-        setLoading(false)
-        return
+      const response = await fetch(`/api/products/${productId}`)
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.error("Product not found:", productId)
+          setProduct(null)
+          setLoading(false)
+          return
+        }
+        throw new Error('Failed to fetch product')
       }
 
-      const { data, error } = await supabase.from("products").select("*").eq("id", productId).single()
-
-      if (error) {
-        console.error("Database error:", error)
-        throw error
-      }
-
-      if (!data) {
-        console.error("Product not found:", productId)
-        setProduct(null)
-        setLoading(false)
-        return
-      }
-
-      const formattedProduct: Product = {
-        id: data.id,
-        name: data.name,
-        price: data.price,
-        originalPrice: data.original_price,
-        description: data.description,
-        category: data.category,
-        subcategory: data.subcategory,
-        sizes: data.sizes || [],
-        colors: data.colors || [],
-        images: data.images || [],
-        image: data.images?.[0] || "/placeholder.svg",
-        materials: ["Turkish Cotton", "Premium Quality"],
-        badge: data.is_todays_offer ? "Sale" : data.is_featured ? "Popular" : "",
-        inStock: data.stock_quantity > 0,
-        isOffer: data.is_todays_offer,
-  lowStockLeft: typeof data.low_stock_left === 'number' ? data.low_stock_left : undefined,
-      }
-
-      setProduct(formattedProduct)
-      setSelectedSize(formattedProduct.sizes[0] || "")
-      setSelectedColor(formattedProduct.colors[0]?.name || "")
+      const data = await response.json()
+      setProduct(data)
+      setSelectedSize(data.sizes?.[0] || "")
+      setSelectedColor(data.colors?.[0]?.name || "")
     } catch (error) {
       console.error("Error loading product:", error)
       setProduct(null)

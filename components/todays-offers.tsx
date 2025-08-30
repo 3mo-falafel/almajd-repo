@@ -4,7 +4,6 @@ import { ProductCard } from "./product-card"
 import { QuickLookModal } from "./quick-look-modal"
 import { Reveal } from "./reveal"
 import { useLanguage } from "@/contexts/language-context"
-import { createClient } from "@/lib/supabase/client"
 import type { Product } from "@/types/product"
 
 export function TodaysOffers() {
@@ -13,7 +12,6 @@ export function TodaysOffers() {
   const [loading, setLoading] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const supabase = createClient()
 
   useEffect(() => {
     loadTodaysOffers()
@@ -21,29 +19,14 @@ export function TodaysOffers() {
 
   const loadTodaysOffers = async () => {
     try {
-      const { data, error } = await supabase.from("products").select("*").eq("is_todays_offer", true).limit(8)
-
-      if (error) throw error
-
-      const formattedOffers: Product[] = data.map((item) => ({
-        id: item.id, // Now using UUID from Supabase
-        name: item.name,
-        price: item.price,
-        originalPrice: item.original_price,
-        description: item.description,
-        category: item.category,
-        subcategory: item.subcategory,
-        sizes: item.sizes || [],
-        colors: item.colors || [],
-        images: item.images || [],
-        image: item.images?.[0] || "/placeholder.svg",
-        materials: ["Turkish Cotton", "Premium Quality"],
-        badge: "Sale",
-        inStock: item.stock_quantity > 0,
-        isOffer: true,
-      }))
-
-      setOffers(formattedOffers)
+      const response = await fetch('/api/products')
+      if (!response.ok) throw new Error('Failed to fetch products')
+      
+      const data = await response.json()
+      // Filter for today's offers and limit to 8
+      const todaysOffers = data.filter((product: Product) => product.isOffer).slice(0, 8)
+      
+      setOffers(todaysOffers)
     } catch (error) {
       console.error("Error loading today's offers:", error)
     } finally {
