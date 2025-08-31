@@ -52,7 +52,13 @@ export async function DELETE(request: NextRequest) {
 
     // Allow legacy non-UUID IDs (numeric or short strings) instead of rejecting.
     const isUUID = validateUUID(id)
-    console.log('[DELETE /api/products] Incoming id:', id, 'isUUID:', isUUID)
+    const idDebug = {
+      id,
+      length: id.length,
+      isUUID,
+      charCodes: Array.from(id).map(c => c.charCodeAt(0))
+    }
+    console.log('[DELETE /api/products] Incoming id diagnostics:', idDebug)
 
     let deleted: boolean | undefined
     try {
