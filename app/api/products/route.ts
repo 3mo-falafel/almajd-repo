@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProducts, addProduct, updateProduct, deleteProduct, setTodaysOffers } from '@/lib/database/products'
-import { validate as validateUUID } from 'uuid'
 
 export async function GET() {
   try {
@@ -50,28 +49,41 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
 
-    // Allow legacy non-UUID IDs (numeric or short strings) instead of rejecting.
-    const isUUID = validateUUID(id)
-    const idDebug = {
-      id,
-      length: id.length,
-      isUUID,
-      charCodes: Array.from(id).map(c => c.charCodeAt(0))
-    }
-    console.log('[DELETE /api/products] Incoming id diagnostics:', idDebug)
+    console.log('[DELETE /api/products] Attempting to delete product ID:', id)
 
     let deleted: boolean | undefined
     try {
       deleted = await deleteProduct(id)
     } catch (dbErr: any) {
-      // Common case: invalid input syntax for type uuid if legacy numeric IDs exist in DB with text/uuid mismatch
       const msg = dbErr?.message || String(dbErr)
-      return NextResponse.json({ error: 'Database error deleting product', message: msg, id, hint: 'If this is a legacy non-UUID ID, adjust schema or remove UUID validation.' }, { status: 500 })
+      console.error('[DELETE /api/products] Database error:', {
+        id,
+        error: msg,
+        code: dbErr?.code,
+        detail: dbErr?.detail
+      })
+
+      // Check if it's a foreign key constraint violation (product is in cart)
+      if (dbErr?.code === '23503') {
+        return NextResponse.json({ 
+          error: 'Cannot delete product', 
+          message: 'This product is currently in someone\'s cart and cannot be deleted. Please try again later or clear cart items first.',
+          id 
+        }, { status: 409 }) // 409 Conflict
+      }
+
+      return NextResponse.json({ 
+        error: 'Database error deleting product', 
+        message: msg, 
+        id 
+      }, { status: 500 })
     }
 
     if (!deleted) {
       return NextResponse.json({ error: 'Product not found', id }, { status: 404 })
     }
+    
+    console.log('[DELETE /api/products] Product deleted successfully:', id)
     return NextResponse.json({ success: true, id })
   } catch (error: any) {
     console.error('Error deleting product:', error?.message || error)

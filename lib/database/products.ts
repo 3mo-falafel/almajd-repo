@@ -37,20 +37,20 @@ export async function getProducts() {
       colors: Array.isArray(row.colors) ? row.colors.map((color: any) => {
         if (typeof color === 'string') {
           try {
+            // Parse the JSON string to get the color object
             const parsed = JSON.parse(color)
-            // If the parsed result is an object with name and hex, return it
+            // Ensure it has the expected structure
             if (parsed && typeof parsed === 'object' && parsed.name && parsed.hex) {
               return parsed
             }
-            // If the parsed result is a string (double-encoded JSON), parse again
-            if (typeof parsed === 'string') {
-              return JSON.parse(parsed)
-            }
-            return parsed
+            // Fallback for malformed data
+            return { name: parsed || color, hex: '#ffffff' }
           } catch {
+            // If parsing fails, treat as a simple color name
             return { name: color, hex: '#ffffff' }
           }
         }
+        // If it's already an object, return as is
         return color
       }) : [],
       images: row.images || [],
@@ -140,10 +140,30 @@ export async function updateProduct(id: string, productData: any) {
 
 export async function deleteProduct(id: string): Promise<boolean> {
   try {
-  console.log('[DB] Attempting to delete product id:', id)
-  const result = await query('DELETE FROM products WHERE id = $1 RETURNING id', [id])
-  console.log('[DB] Delete result rowCount:', result.rowCount)
-  return result.rowCount > 0
+    console.log('[DB] Attempting to delete product id:', id)
+    
+    // First check if product exists
+    const existsResult = await query('SELECT id FROM products WHERE id = $1', [id])
+    if (existsResult.rowCount === 0) {
+      console.log('[DB] Product not found:', id)
+      return false
+    }
+    
+    // Check if product is referenced in cart_items
+    const cartRefResult = await query('SELECT COUNT(*) as count FROM cart_items WHERE product_id = $1', [id])
+    const cartReferences = parseInt(cartRefResult.rows[0].count)
+    
+    if (cartReferences > 0) {
+      console.log(`[DB] Cannot delete product ${id}: referenced in ${cartReferences} cart items`)
+      const error: any = new Error(`Cannot delete product: it is referenced in ${cartReferences} cart item(s)`)
+      error.code = '23503' // Foreign key violation code
+      throw error
+    }
+    
+    // Proceed with deletion
+    const result = await query('DELETE FROM products WHERE id = $1 RETURNING id', [id])
+    console.log('[DB] Delete result rowCount:', result.rowCount)
+    return (result.rowCount || 0) > 0
   } catch (error) {
     // Provide structured logging for easier diagnosis
     const err: any = error

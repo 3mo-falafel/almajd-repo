@@ -41,7 +41,7 @@ interface AdminContextType {
   logout: () => void
   addProduct: (product: any) => Promise<void>
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>
-  deleteProduct: (id: string) => Promise<void>
+  deleteProduct: (id: string, force?: boolean) => Promise<void>
   updateOrderStatus: (orderId: string, status: Order["status"]) => Promise<void>
   setTodaysOffers: (productIds: string[]) => Promise<void>
   loadProducts: () => Promise<void>
@@ -193,18 +193,33 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = async (id: string, force: boolean = false) => {
     try {
-      const response = await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+      const endpoint = force ? '/api/products/force' : '/api/products'
+      const url = `${endpoint}?id=${encodeURIComponent(id)}${force ? '&force=true' : ''}`
+      const response = await fetch(url, { method: 'DELETE' })
+      
       if (!response.ok) {
         let info: any = null
         try { info = await response.json() } catch {}
         console.error('Delete product failed:', response.status, info)
+        
+        // Handle specific error cases
+        if (response.status === 409) {
+          // Conflict - product is in cart, return special error for UI to handle
+          const error: any = new Error(info?.message || 'Cannot delete product: it is currently in someone\'s cart')
+          error.canForceDelete = info?.canForceDelete
+          throw error
+        }
+        
         throw new Error(info?.error || `Failed to delete product (${response.status})`)
       }
+      
       await loadProducts()
     } catch (error) {
       console.error("Error deleting product:", error)
+      // Re-throw to let the UI handle the error message
+      throw error
     }
   }
 

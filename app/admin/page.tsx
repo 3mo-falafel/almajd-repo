@@ -60,6 +60,8 @@ function AdminDashboardContent(): ReactElement {
   const [orderProductDetails, setOrderProductDetails] = useState<{ [key: string]: any }>({})
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [canForceDelete, setCanForceDelete] = useState(false)
   const [showAddGallery, setShowAddGallery] = useState(false)
   const [editingGallery, setEditingGallery] = useState<any>(null)
 
@@ -106,10 +108,26 @@ function AdminDashboardContent(): ReactElement {
                   description: productData.description
                 }
               } else {
-                console.error(`[v0] Failed to fetch product ${productId}:`, response.status)
+                console.warn(`[v0] Product ${productId} not found (deleted):`, response.status)
+                // Set placeholder data for deleted products
+                detailsMap[productId] = {
+                  id: productId,
+                  name: `[Deleted Product #${productId}]`,
+                  images: ["/placeholder.svg"],
+                  price: 0,
+                  description: "This product has been deleted from the system"
+                }
               }
             } catch (error) {
               console.error(`[v0] Error fetching product ${productId}:`, error)
+              // Set placeholder data for errored products
+              detailsMap[productId] = {
+                id: productId,
+                name: `[Error Loading Product #${productId}]`,
+                images: ["/placeholder.svg"],
+                price: 0,
+                description: "Error loading product details"
+              }
             }
           }
 
@@ -531,20 +549,37 @@ function AdminDashboardContent(): ReactElement {
 
   const handleDeleteProduct = async (product: Product) => {
     setDeletingProduct(product)
+    setDeleteError(null)
+    setCanForceDelete(false)
   }
 
-  const confirmDelete = async () => {
+  const confirmDelete = async (force: boolean = false) => {
     if (!deletingProduct) return
 
     setIsDeleting(true)
+    setDeleteError(null)
     try {
-      console.log("[v0] Deleting product:", deletingProduct.id)
-      await deleteProduct(deletingProduct.id)
+      console.log("[v0] Deleting product:", deletingProduct.id, force ? "(force)" : "")
+      await deleteProduct(deletingProduct.id, force)
       console.log("[v0] Product deleted successfully")
       setDeletingProduct(null)
-    } catch (error) {
+      setDeleteError(null)
+      setCanForceDelete(false)
+    } catch (error: any) {
       console.error("[v0] Error deleting product:", error)
-      alert("Error deleting product. Please try again.")
+      
+      // Check if it's a cart conflict error
+      if (error?.canForceDelete) {
+        setDeleteError(error.message)
+        setCanForceDelete(true)
+      } else {
+        // Show user-friendly error message and close modal
+        const errorMessage = error?.message || 'Unknown error occurred'
+        alert(`Failed to delete product: ${errorMessage}`)
+        setDeletingProduct(null)
+        setDeleteError(null)
+        setCanForceDelete(false)
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -552,6 +587,8 @@ function AdminDashboardContent(): ReactElement {
 
   const cancelDelete = () => {
     setDeletingProduct(null)
+    setDeleteError(null)
+    setCanForceDelete(false)
   }
 
   return (
@@ -1290,9 +1327,20 @@ function AdminDashboardContent(): ReactElement {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 mb-2">Delete Product</h3>
-                <p className="text-neutral-600">
+                <p className="text-neutral-600 mb-3">
                   Are you sure you want to delete "{deletingProduct.name}"? This action cannot be undone.
                 </p>
+                
+                {deleteError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <p className="text-red-700 text-sm">{deleteError}</p>
+                    {canForceDelete && (
+                      <p className="text-red-600 text-sm mt-2">
+                        You can force delete this product, which will remove it from all shopping carts.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex gap-3 pt-4">
                 <Button
@@ -1303,13 +1351,33 @@ function AdminDashboardContent(): ReactElement {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={confirmDelete}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Deleting..." : "Delete"}
-                </Button>
+                {canForceDelete ? (
+                  <>
+                    <Button
+                      onClick={() => confirmDelete(false)}
+                      variant="outline"
+                      className="flex-1"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Trying..." : "Try Again"}
+                    </Button>
+                    <Button
+                      onClick={() => confirmDelete(true)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Force Deleting..." : "Force Delete"}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => confirmDelete()}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </Button>
+                )}
               </div>
             </div>
           </motion.div>

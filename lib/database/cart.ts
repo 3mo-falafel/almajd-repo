@@ -87,3 +87,15 @@ export async function clearCart(sessionId: string) {
     throw error
   }
 }
+
+export async function removeProductFromAllCarts(productId: string) {
+  try {
+    console.log('[DB] Removing product from all carts:', productId)
+    const result = await query('DELETE FROM cart_items WHERE product_id = $1', [productId])
+    console.log('[DB] Removed product from', result.rowCount, 'cart items')
+    return result.rowCount || 0
+  } catch (error) {
+    console.error('Error removing product from carts:', error)
+    throw error
+  }
+}

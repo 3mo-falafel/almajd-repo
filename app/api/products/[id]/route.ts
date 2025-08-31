@@ -3,9 +3,10 @@ import { query } from '@/lib/database/config'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const result = await query(`
       SELECT 
         id,
@@ -25,7 +26,7 @@ export async function GET(
         created_at
       FROM products 
       WHERE id = $1
-    `, [params.id])
+    `, [id])
     
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
@@ -44,20 +45,20 @@ export async function GET(
       colors: Array.isArray(row.colors) ? row.colors.map((color: any) => {
         if (typeof color === 'string') {
           try {
+            // Parse the JSON string to get the color object
             const parsed = JSON.parse(color)
-            // If the parsed result is an object with name and hex, return it
+            // Ensure it has the expected structure
             if (parsed && typeof parsed === 'object' && parsed.name && parsed.hex) {
               return parsed
             }
-            // If the parsed result is a string (double-encoded JSON), parse again
-            if (typeof parsed === 'string') {
-              return JSON.parse(parsed)
-            }
-            return parsed
+            // Fallback for malformed data
+            return { name: parsed || color, hex: '#ffffff' }
           } catch {
+            // If parsing fails, treat as a simple color name
             return { name: color, hex: '#ffffff' }
           }
         }
+        // If it's already an object, return as is
         return color
       }) : [],
       images: row.images || [],
