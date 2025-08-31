@@ -138,9 +138,10 @@ export async function updateProduct(id: string, productData: any) {
   }
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string): Promise<boolean> {
   try {
-    await query('DELETE FROM products WHERE id = $1', [id])
+    const result = await query('DELETE FROM products WHERE id = $1 RETURNING id', [id])
+    return result.rowCount > 0
   } catch (error) {
     console.error('Error deleting product:', error)
     throw error

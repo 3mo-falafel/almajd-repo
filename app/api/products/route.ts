@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProducts, addProduct, updateProduct, deleteProduct, setTodaysOffers } from '@/lib/database/products'
+import { validate as validateUUID } from 'uuid'
 
 export async function GET() {
   try {
@@ -42,16 +43,22 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-    
+    const id = searchParams.get('id')?.trim()
+
     if (!id) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
-    
-    await deleteProduct(id)
+    if (!validateUUID(id)) {
+      return NextResponse.json({ error: 'Invalid product ID format' }, { status: 400 })
+    }
+
+    const deleted = await deleteProduct(id)
+    if (!deleted) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+    }
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error deleting product:', error)
-    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Error deleting product:', error?.message || error)
+    return NextResponse.json({ error: 'Failed to delete product', details: error?.message }, { status: 500 })
   }
 }

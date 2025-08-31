@@ -19,17 +19,23 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at);
 -- Enable RLS - orders are private to customers or admin-accessible
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
--- Allow authenticated users (admin) to read all orders
-CREATE POLICY "orders_select_authenticated"
+-- Replace Supabase auth-based policies with permissive ones (adjust later for real auth)
+DROP POLICY IF EXISTS "orders_select_authenticated" ON public.orders;
+DROP POLICY IF EXISTS "orders_update_authenticated" ON public.orders;
+
+CREATE POLICY "orders_select_all"
   ON public.orders FOR SELECT
-  USING (auth.uid() IS NOT NULL);
+  USING (true);
+>>>>>>> 0f826d0 (Remove Supabase, add UUID validation, improve delete endpoint, update RLS scripts)
 
 -- Allow anyone to insert orders (for guest checkout)
 CREATE POLICY "orders_insert_all"
   ON public.orders FOR INSERT
   WITH CHECK (true);
 
--- Only authenticated users can update orders (admin functionality)
-CREATE POLICY "orders_update_authenticated"
+CREATE POLICY "orders_update_all"
   ON public.orders FOR UPDATE
-  USING (auth.uid() IS NOT NULL);
+  USING (true);
+CREATE POLICY "orders_update_all"
+  ON public.orders FOR UPDATE
+  USING (true);

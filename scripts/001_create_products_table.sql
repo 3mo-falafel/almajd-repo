@@ -32,15 +32,19 @@ CREATE POLICY "products_select_all"
   ON public.products FOR SELECT
   USING (true);
 
--- Only authenticated users can insert/update/delete (for admin functionality)
-CREATE POLICY "products_insert_authenticated"
+-- Generic self-hosted policies (adjust USING / WITH CHECK for real auth later)
+DROP POLICY IF EXISTS "products_insert_authenticated" ON public.products;
+DROP POLICY IF EXISTS "products_update_authenticated" ON public.products;
+DROP POLICY IF EXISTS "products_delete_authenticated" ON public.products;
+
+CREATE POLICY "products_insert_all"
   ON public.products FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+  WITH CHECK (true);
 
-CREATE POLICY "products_update_authenticated"
+CREATE POLICY "products_update_all"
   ON public.products FOR UPDATE
-  USING (auth.uid() IS NOT NULL);
+  USING (true);
 
-CREATE POLICY "products_delete_authenticated"
+CREATE POLICY "products_delete_all"
   ON public.products FOR DELETE
-  USING (auth.uid() IS NOT NULL);
+  USING (true);
