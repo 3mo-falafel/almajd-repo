@@ -15,7 +15,6 @@ import { useCart } from "@/contexts/cart-context"
 import { useLanguage } from "@/contexts/language-context"
 import { formatCurrency } from "@/lib/utils"
 import { Reveal } from "@/components/reveal"
-import { createClient } from "@/lib/supabase/client"
 
 interface CheckoutForm {
   name: string
@@ -38,7 +37,6 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [shippingMethod, setShippingMethod] = useState<"pickup" | "village" | "westbank" | "jerusalem" | "occupied" | "">("")
-  const supabase = createClient()
 
   const handleInputChange = (field: keyof CheckoutForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -50,9 +48,9 @@ export default function CheckoutPage() {
 
     try {
       const orderItems = state.items.map((item) => ({
-        product_id: item.product.id,
-        product_name: item.product.name,
-        product_price: item.product.price,
+        productId: item.product.id,
+        productName: item.product.name,
+        productPrice: item.product.price,
         size: item.size,
         color: item.color,
         quantity: item.quantity,
@@ -69,28 +67,32 @@ export default function CheckoutPage() {
       }
       const shippingFee = shippingFees[shippingMethod] ?? 0
 
-      const { data, error } = await supabase
-        .from("orders")
-        .insert({
-          customer_name: form.name,
-          customer_phone: form.phone,
-          customer_address: form.address,
-          customer_city: form.city,
-          customer_notes:
-            (form.notes ? form.notes + "\n" : "") +
-            `Shipping Method: ${shippingMethod || "not_selected"} | Shipping Fee: ${shippingFee}`,
-          order_items: orderItems,
-          total_amount: getTotalPrice() + shippingFee,
-          status: "pending",
-        })
-        .select()
-
-      if (error) {
-        console.error("Error saving order:", error)
-        throw error
+      const orderData = {
+        customerName: form.name,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        notes: (form.notes ? form.notes + "\n" : "") +
+          `Shipping Method: ${shippingMethod || "not_selected"} | Shipping Fee: ${shippingFee}`,
+        items: orderItems,
+        total: getTotalPrice() + shippingFee,
+        status: "pending",
       }
 
-      console.log("[v0] Order saved successfully:", data)
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create order')
+      }
+
+      const result = await response.json()
+      console.log("[v0] Order saved successfully:", result)
 
       // Clear the cart after successful order
       await clearCart()

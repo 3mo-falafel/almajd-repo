@@ -93,6 +93,11 @@ export function ProductCard({ product, onQuickLook }: ProductCardProps) {
               Only {product.lowStockLeft} left
             </p>
           )}
+          {!product.inStock && (
+            <p className="text-[11px] sm:text-xs md:text-sm font-semibold text-red-300 md:text-red-400 mb-2">
+              Out of Stock
+            </p>
+          )}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
@@ -102,12 +107,19 @@ export function ProductCard({ product, onQuickLook }: ProductCardProps) {
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                onQuickLook(product)
+                if (product.inStock) {
+                  onQuickLook(product)
+                }
               }}
-              className="w-full bg-white/15 hover:bg-white/25 text-white border border-white/25 text-[11px] sm:text-xs md:text-sm py-1.5 md:py-2 h-auto transition-all duration-200"
+              disabled={!product.inStock}
+              className={`w-full border border-white/25 text-[11px] sm:text-xs md:text-sm py-1.5 md:py-2 h-auto transition-all duration-200 ${
+                product.inStock 
+                  ? "bg-white/15 hover:bg-white/25 text-white" 
+                  : "bg-gray-500/50 text-gray-300 cursor-not-allowed"
+              }`}
             >
               <ShoppingCart className="w-3 h-3 mr-1" />
-              {t("products.quickShop") || "Quick Shop"}
+              {product.inStock ? (t("products.quickShop") || "Quick Shop") : "Out of Stock"}
             </Button>
           </motion.div>
         </div>

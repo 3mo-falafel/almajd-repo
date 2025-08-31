@@ -147,6 +147,35 @@ export async function deleteProduct(id: string) {
   }
 }
 
+export async function updateProductStock(productId: string, quantityOrdered: number) {
+  try {
+    const result = await query(`
+      UPDATE products 
+      SET stock_quantity = GREATEST(0, stock_quantity - $1)
+      WHERE id = $2
+      RETURNING id, stock_quantity
+    `, [quantityOrdered, productId])
+    
+    return result.rows[0]
+  } catch (error) {
+    console.error('Error updating product stock:', error)
+    throw error
+  }
+}
+
+export async function checkProductStock(productId: string) {
+  try {
+    const result = await query(`
+      SELECT stock_quantity FROM products WHERE id = $1
+    `, [productId])
+    
+    return result.rows[0]?.stock_quantity || 0
+  } catch (error) {
+    console.error('Error checking product stock:', error)
+    return 0
+  }
+}
+
 export async function setTodaysOffers(productIds: string[]) {
   try {
     // Remove all current offers

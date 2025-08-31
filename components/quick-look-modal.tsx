@@ -189,7 +189,7 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                     <div className={cn("flex items-center gap-2", isRTL && "justify-end")}>
                       <span className="text-2xl font-bold text-neutral-900">{formatCurrency(displayPrice)}</span>
                       {hasDiscount && (
-                        <span className="text-lg text-neutral-500 line-through">{formatCurrency(product.originalPrice)}</span>
+                        <span className="text-lg text-neutral-500 line-through">{formatCurrency(product.originalPrice || 0)}</span>
                       )}
                     </div>
 
@@ -241,7 +241,7 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
                                   ? "border-neutral-900 scale-110 ring-2 ring-neutral-900 ring-offset-2"
                                   : "border-neutral-300 hover:border-neutral-400",
                               )}
-                              style={{ backgroundColor: color.hex || color.color }}
+                              style={{ backgroundColor: (color as any).hex || color.color }}
                               title={color.name}
                             >
                               {selectedColor === color.name && <div className="w-2 h-2 bg-white rounded-full" />}
@@ -297,19 +297,31 @@ export function QuickLookModal({ product, isOpen, onClose }: QuickLookModalProps
 
                   {/* Get Now Button */}
                   <div className="mt-8 pt-6 border-t border-neutral-200">
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <motion.div whileHover={{ scale: product.inStock ? 1.02 : 1 }} whileTap={{ scale: product.inStock ? 0.98 : 1 }}>
                       <Button
                         onClick={handleAddToCart}
-                        className="w-full bg-neutral-900 text-white py-4 rounded-full font-medium text-lg hover:bg-neutral-800 transition-colors duration-200 flex items-center justify-center gap-2"
-                        disabled={!selectedSize || !selectedColor}
+                        className={`w-full py-4 rounded-full font-medium text-lg transition-colors duration-200 flex items-center justify-center gap-2 ${
+                          product.inStock 
+                            ? "bg-neutral-900 text-white hover:bg-neutral-800" 
+                            : "bg-gray-400 text-gray-600 cursor-not-allowed"
+                        }`}
+                        disabled={!product.inStock || !selectedSize || !selectedColor}
                       >
                         <ShoppingCart size={20} />
-                        {t("products.getNow")} - {formatCurrency(displayPrice * quantity)}
+                        {product.inStock 
+                          ? `${t("products.getNow")} - ${formatCurrency(displayPrice * quantity)}`
+                          : "Out of Stock"
+                        }
                       </Button>
                     </motion.div>
-                    {(!selectedSize || !selectedColor) && (
+                    {product.inStock && (!selectedSize || !selectedColor) && (
                       <p className="text-sm text-red-500 text-center mt-2">
                         {t("products.selectSizeAndColor") || "Please select size and color"}
+                      </p>
+                    )}
+                    {!product.inStock && (
+                      <p className="text-sm text-red-500 text-center mt-2">
+                        This product is currently out of stock
                       </p>
                     )}
                   </div>

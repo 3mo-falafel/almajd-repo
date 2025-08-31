@@ -1,4 +1,5 @@
 import { query } from './config'
+import { updateProductStock } from './products'
 
 export async function getOrders() {
   try {
@@ -38,6 +39,7 @@ export async function getOrders() {
 
 export async function createOrder(orderData: any) {
   try {
+    // Start a transaction-like approach by creating the order first
     const result = await query(`
       INSERT INTO orders (
         customer_name, customer_phone, customer_address, customer_city,
@@ -55,6 +57,20 @@ export async function createOrder(orderData: any) {
       orderData.status || 'pending'
     ])
     
+    const orderId = result.rows[0].id
+    
+    // Update stock for each product in the order
+    for (const item of orderData.items) {
+      const productId = item.productId
+      const quantity = item.quantity
+      
+      if (productId && quantity > 0) {
+        console.log(`[Stock] Reducing stock for product ${productId} by ${quantity}`)
+        await updateProductStock(productId, quantity)
+      }
+    }
+    
+    console.log(`[Order] Created order ${orderId} and updated stock for ${orderData.items.length} items`)
     return result.rows[0]
   } catch (error) {
     console.error('Error creating order:', error)

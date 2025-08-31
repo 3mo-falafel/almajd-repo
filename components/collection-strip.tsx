@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import Link from "next/link"
 import { Reveal } from "./reveal"
-import { createBrowserClient } from "@supabase/ssr"
 import { useLanguage } from "@/contexts/language-context"
 
 interface ProductRecord {
@@ -42,24 +41,27 @@ export function CollectionStrip() {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        )
-        const { data, error } = await supabase
-          .from("products")
-          .select("id, name, images, price, category, subcategory")
-          .limit(60)
-
-        if (error) {
-          console.error("[v0] Error loading products:", error)
+        const response = await fetch('/api/products')
+        if (!response.ok) {
+          console.error("[v0] Error loading products:", response.status)
           return
         }
+        
+        const data = await response.json()
         if (!data || data.length === 0) return
 
-        // Shuffle products for randomness
-        const shuffled = [...data].sort(() => Math.random() - 0.5)
-        setProducts(shuffled as ProductRecord[])
+        // Map to expected format and shuffle for randomness
+        const mappedProducts = data.map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          images: product.images,
+          price: product.price,
+          category: product.category,
+          subcategory: product.subcategory
+        }))
+        
+        const shuffled = [...mappedProducts].sort(() => Math.random() - 0.5)
+        setProducts(shuffled.slice(0, 60)) // Limit to 60 products
       } catch (error) {
         console.error("[v0] Error in loadProducts:", error)
       }
