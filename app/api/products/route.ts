@@ -43,20 +43,30 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')?.trim()
+    const rawId = searchParams.get('id')
+    const id = rawId?.trim()
 
     if (!id) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
-    if (!validateUUID(id)) {
-      return NextResponse.json({ error: 'Invalid product ID format' }, { status: 400 })
+
+    // Allow legacy non-UUID IDs (numeric or short strings) instead of rejecting.
+    const isUUID = validateUUID(id)
+    console.log('[DELETE /api/products] Incoming id:', id, 'isUUID:', isUUID)
+
+    let deleted: boolean | undefined
+    try {
+      deleted = await deleteProduct(id)
+    } catch (dbErr: any) {
+      // Common case: invalid input syntax for type uuid if legacy numeric IDs exist in DB with text/uuid mismatch
+      const msg = dbErr?.message || String(dbErr)
+      return NextResponse.json({ error: 'Database error deleting product', message: msg, id, hint: 'If this is a legacy non-UUID ID, adjust schema or remove UUID validation.' }, { status: 500 })
     }
 
-    const deleted = await deleteProduct(id)
     if (!deleted) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Product not found', id }, { status: 404 })
     }
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, id })
   } catch (error: any) {
     console.error('Error deleting product:', error?.message || error)
     return NextResponse.json({ error: 'Failed to delete product', details: error?.message }, { status: 500 })

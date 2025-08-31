@@ -195,8 +195,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const deleteProduct = async (id: string) => {
     try {
-      const response = await fetch(`/api/products?id=${id}`, { method: 'DELETE' })
-      if (!response.ok) throw new Error('Failed to delete product')
+      const response = await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+      if (!response.ok) {
+        let info: any = null
+        try { info = await response.json() } catch {}
+        console.error('Delete product failed:', response.status, info)
+        throw new Error(info?.error || `Failed to delete product (${response.status})`)
+      }
       await loadProducts()
     } catch (error) {
       console.error("Error deleting product:", error)
