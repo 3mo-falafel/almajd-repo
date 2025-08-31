@@ -60,8 +60,6 @@ function AdminDashboardContent(): ReactElement {
   const [orderProductDetails, setOrderProductDetails] = useState<{ [key: string]: any }>({})
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [canForceDelete, setCanForceDelete] = useState(false)
   const [showAddGallery, setShowAddGallery] = useState(false)
   const [editingGallery, setEditingGallery] = useState<any>(null)
 
@@ -549,36 +547,39 @@ function AdminDashboardContent(): ReactElement {
 
   const handleDeleteProduct = async (product: Product) => {
     setDeletingProduct(product)
-    setDeleteError(null)
-    setCanForceDelete(false)
   }
 
   const confirmDelete = async (force: boolean = false) => {
     if (!deletingProduct) return
 
     setIsDeleting(true)
-    setDeleteError(null)
     try {
       console.log("[v0] Deleting product:", deletingProduct.id, force ? "(force)" : "")
       await deleteProduct(deletingProduct.id, force)
       console.log("[v0] Product deleted successfully")
       setDeletingProduct(null)
-      setDeleteError(null)
-      setCanForceDelete(false)
     } catch (error: any) {
       console.error("[v0] Error deleting product:", error)
       
-      // Check if it's a cart conflict error
-      if (error?.canForceDelete) {
-        setDeleteError(error.message)
-        setCanForceDelete(true)
+      // Check if it's a cart conflict error and we haven't tried force yet
+      if (error?.canForceDelete && !force) {
+        console.log("[v0] Product is in cart, attempting force delete...")
+        try {
+          // Automatically retry with force delete
+          await deleteProduct(deletingProduct.id, true)
+          console.log("[v0] Product force deleted successfully")
+          setDeletingProduct(null)
+        } catch (forceError: any) {
+          console.error("[v0] Force delete also failed:", forceError)
+          const errorMessage = forceError?.message || 'Failed to force delete product'
+          alert(`Failed to delete product: ${errorMessage}`)
+          setDeletingProduct(null)
+        }
       } else {
         // Show user-friendly error message and close modal
         const errorMessage = error?.message || 'Unknown error occurred'
         alert(`Failed to delete product: ${errorMessage}`)
         setDeletingProduct(null)
-        setDeleteError(null)
-        setCanForceDelete(false)
       }
     } finally {
       setIsDeleting(false)
@@ -587,8 +588,6 @@ function AdminDashboardContent(): ReactElement {
 
   const cancelDelete = () => {
     setDeletingProduct(null)
-    setDeleteError(null)
-    setCanForceDelete(false)
   }
 
   return (
@@ -1328,19 +1327,11 @@ function AdminDashboardContent(): ReactElement {
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 mb-2">Delete Product</h3>
                 <p className="text-neutral-600 mb-3">
-                  Are you sure you want to delete "{deletingProduct.name}"? This action cannot be undone.
+                  Are you sure you want to delete "{deletingProduct.name}"? 
                 </p>
-                
-                {deleteError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                    <p className="text-red-700 text-sm">{deleteError}</p>
-                    {canForceDelete && (
-                      <p className="text-red-600 text-sm mt-2">
-                        You can force delete this product, which will remove it from all shopping carts.
-                      </p>
-                    )}
-                  </div>
-                )}
+                <p className="text-sm text-gray-500">
+                  This will remove the product and any cart items containing it.
+                </p>
               </div>
               <div className="flex gap-3 pt-4">
                 <Button
@@ -1351,33 +1342,13 @@ function AdminDashboardContent(): ReactElement {
                 >
                   Cancel
                 </Button>
-                {canForceDelete ? (
-                  <>
-                    <Button
-                      onClick={() => confirmDelete(false)}
-                      variant="outline"
-                      className="flex-1"
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? "Trying..." : "Try Again"}
-                    </Button>
-                    <Button
-                      onClick={() => confirmDelete(true)}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? "Force Deleting..." : "Force Delete"}
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    onClick={() => confirmDelete()}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </Button>
-                )}
+                <Button
+                  onClick={() => confirmDelete()}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Deleting..." : "Delete Product"}
+                </Button>
               </div>
             </div>
           </motion.div>
