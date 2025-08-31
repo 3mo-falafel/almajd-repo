@@ -549,38 +549,20 @@ function AdminDashboardContent(): ReactElement {
     setDeletingProduct(product)
   }
 
-  const confirmDelete = async (force: boolean = false) => {
+  const confirmDelete = async () => {
     if (!deletingProduct) return
 
     setIsDeleting(true)
     try {
-      console.log("[v0] Deleting product:", deletingProduct.id, force ? "(force)" : "")
-      await deleteProduct(deletingProduct.id, force)
+      console.log("[v0] Deleting product:", deletingProduct.id)
+      await deleteProduct(deletingProduct.id) // Let context handle force delete automatically
       console.log("[v0] Product deleted successfully")
       setDeletingProduct(null)
     } catch (error: any) {
       console.error("[v0] Error deleting product:", error)
-      
-      // Check if it's a cart conflict error and we haven't tried force yet
-      if (error?.canForceDelete && !force) {
-        console.log("[v0] Product is in cart, attempting force delete...")
-        try {
-          // Automatically retry with force delete
-          await deleteProduct(deletingProduct.id, true)
-          console.log("[v0] Product force deleted successfully")
-          setDeletingProduct(null)
-        } catch (forceError: any) {
-          console.error("[v0] Force delete also failed:", forceError)
-          const errorMessage = forceError?.message || 'Failed to force delete product'
-          alert(`Failed to delete product: ${errorMessage}`)
-          setDeletingProduct(null)
-        }
-      } else {
-        // Show user-friendly error message and close modal
-        const errorMessage = error?.message || 'Unknown error occurred'
-        alert(`Failed to delete product: ${errorMessage}`)
-        setDeletingProduct(null)
-      }
+      const errorMessage = error?.message || 'Unknown error occurred'
+      alert(`Failed to delete product: ${errorMessage}`)
+      setDeletingProduct(null)
     } finally {
       setIsDeleting(false)
     }
@@ -1343,7 +1325,7 @@ function AdminDashboardContent(): ReactElement {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => confirmDelete()}
+                  onClick={confirmDelete}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                   disabled={isDeleting}
                 >

@@ -205,11 +205,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         console.error('Delete product failed:', response.status, info)
         
         // Handle specific error cases
-        if (response.status === 409) {
-          // Conflict - product is in cart, return special error for UI to handle
-          const error: any = new Error(info?.message || 'Cannot delete product: it is currently in someone\'s cart')
-          error.canForceDelete = info?.canForceDelete
-          throw error
+        if (response.status === 409 && !force) {
+          // Conflict - product is in cart, automatically try force delete
+          console.log('Product is in cart, attempting force delete...')
+          return await deleteProduct(id, true) // Recursively call with force=true
         }
         
         throw new Error(info?.error || `Failed to delete product (${response.status})`)
