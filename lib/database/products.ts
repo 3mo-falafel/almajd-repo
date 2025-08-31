@@ -145,7 +145,15 @@ export async function deleteProduct(id: string): Promise<boolean> {
   console.log('[DB] Delete result rowCount:', result.rowCount)
   return result.rowCount > 0
   } catch (error) {
-    console.error('Error deleting product:', error)
+    // Provide structured logging for easier diagnosis
+    const err: any = error
+    console.error('[DB] Error deleting product', {
+      id,
+      message: err?.message,
+      code: err?.code,
+      detail: err?.detail,
+      stack: err?.stack?.split('\n')[0]
+    })
     throw error
   }
 }
