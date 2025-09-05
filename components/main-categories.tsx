@@ -10,25 +10,25 @@ const categories = [
     id: "men",
     nameKey: "categories.men",
     image: "/elegant-men-s-turkish-jacket.png",
-    subcategories: ["pants", "summerShirts", "winterShirts", "jackets", "boots", "underwear", "hats", "slippers"],
+    subcategories: ["pants", "summerShirts", "winterShirts", "jackets", "boots", "underwear", "hats", "slippers", "pajamaSets"],
   },
   {
     id: "women",
     nameKey: "categories.women",
     image: "/elegant-turkish-women-s-dress.png",
-    subcategories: ["dress", "abaya", "pants", "summerShirts", "winterShirts", "jackets", "boots", "slippers"],
+    subcategories: ["dress", "abaya", "pants", "summerShirts", "winterShirts", "jackets", "boots", "slippers", "pajamaSets"],
   },
   {
     id: "boys",
     nameKey: "categories.boys",
     image: "/boys-turkish-outfit.png",
-    subcategories: ["pants", "summerShirts", "winterShirts", "jackets", "boots", "underwear", "hats", "slippers"],
+    subcategories: ["pants", "summerShirts", "winterShirts", "jackets", "boots", "underwear", "hats", "slippers", "pajamaSets"],
   },
   {
     id: "girls",
     nameKey: "categories.girls",
     image: "/girls-turkish-dress.png",
-    subcategories: ["dress", "pants", "summerShirts", "winterShirts", "jackets", "boots", "slippers"],
+    subcategories: ["dress", "pants", "summerShirts", "winterShirts", "jackets", "boots", "slippers", "pajamaSets"],
   },
 ]
 

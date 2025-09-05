@@ -58,6 +58,7 @@ export async function getProducts() {
       materials: ["Turkish Cotton", "Premium Quality"],
       badge: row.is_todays_offer ? "Sale" : row.is_featured ? "Popular" : "",
       inStock: row.stock_quantity > 0,
+      stockQuantity: row.stock_quantity,
       isOffer: row.is_todays_offer,
       lowStockLeft: row.low_stock_left,
     }))

@@ -50,6 +50,7 @@ const translations = {
     "subcategories.slippers": "Slippers",
     "subcategories.dress": "Dress",
     "subcategories.abaya": "Abaya",
+    "subcategories.pajamaSets": "Pajama Sets",
 
     // Products
     "products.title": "Our Collection",
@@ -228,6 +229,7 @@ const translations = {
   "admin.logout": "Logout",
   "admin.nav.overview": "Overview",
   "admin.nav.products": "Products",
+  "admin.nav.outOfStock": "Out of Stock",
   "admin.nav.orders": "Orders",
   "admin.nav.offers": "Today's Offers",
   "admin.nav.gallery": "Gallery",
@@ -241,8 +243,8 @@ const translations = {
   "admin.products.edit": "Edit Product",
   "admin.products.addNew": "Add New Product",
   "admin.products.name": "Product Name",
-  "admin.products.price": "Price ($)",
-  "admin.products.originalPrice": "Original Price ($)",
+  "admin.products.price": "Price (₪)",
+  "admin.products.originalPrice": "Original Price (₪)",
   "admin.products.stockQuantity": "Stock Quantity",
   "admin.products.category": "Category",
   "admin.products.subcategory": "Subcategory",
@@ -377,6 +379,7 @@ const translations = {
     "subcategories.slippers": "شباشب",
     "subcategories.dress": "فساتين",
     "subcategories.abaya": "عباءات",
+    "subcategories.pajamaSets": "بيجامات",
 
     // Products
     "products.title": "مجموعتنا",
@@ -553,6 +556,7 @@ const translations = {
   "admin.logout": "تسجيل الخروج",
   "admin.nav.overview": "نظرة عامة",
   "admin.nav.products": "المنتجات",
+  "admin.nav.outOfStock": "نفذ من المخزون",
   "admin.nav.orders": "الطلبات",
   "admin.nav.offers": "عروض اليوم",
   "admin.nav.gallery": "المعرض",
@@ -566,8 +570,8 @@ const translations = {
   "admin.products.edit": "تعديل المنتج",
   "admin.products.addNew": "إضافة منتج جديد",
   "admin.products.name": "اسم المنتج",
-  "admin.products.price": "السعر ($)",
-  "admin.products.originalPrice": "السعر الأصلي ($)",
+  "admin.products.price": "السعر (₪)",
+  "admin.products.originalPrice": "السعر الأصلي (₪)",
   "admin.products.stockQuantity": "الكمية في المخزون",
   "admin.products.category": "الفئة",
   "admin.products.subcategory": "الفئة الفرعية",

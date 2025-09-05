@@ -22,6 +22,7 @@ import {
   BarChart3,
   Tag,
   ImageIcon,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -53,7 +54,7 @@ function AdminDashboardContent(): ReactElement {
     updateGalleryItem,
     deleteGalleryItem,
   } = useAdmin()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [activeTab, setActiveTab] = useState("overview")
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -67,6 +68,7 @@ function AdminDashboardContent(): ReactElement {
   const navItems = [
     { id: "overview", label: t("admin.nav.overview"), icon: BarChart3 },
     { id: "products", label: t("admin.nav.products"), icon: Package },
+    { id: "out-of-stock", label: t("admin.nav.outOfStock"), icon: AlertTriangle },
     { id: "orders", label: t("admin.nav.orders"), icon: ShoppingCart },
     { id: "offers", label: t("admin.nav.offers"), icon: Tag },
     { id: "gallery", label: t("admin.nav.gallery"), icon: ImageIcon },
@@ -441,22 +443,55 @@ function AdminDashboardContent(): ReactElement {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-2">{t("admin.products.numericSizes")}</p>
-                  <div className="grid grid-cols-8 gap-2">
-                    {AVAILABLE_SIZES.numeric.map((size) => (
-                      <label key={size} className="flex items-center space-x-2 cursor-pointer">
-                        <Checkbox
-                          checked={selectedSizes.includes(size)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedSizes([...selectedSizes, size])
-                            } else {
-                              setSelectedSizes(selectedSizes.filter((s) => s !== size))
-                            }
-                          }}
-                        />
-                        <span className="text-sm">{size}</span>
-                      </label>
-                    ))}
+                  <div className="mb-3 flex gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const commonSizes = ["36", "38", "40", "42", "44", "46", "48"];
+                        setSelectedSizes([...new Set([...selectedSizes, ...commonSizes])]);
+                      }}
+                      className="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    >
+                      Add Common (36-48)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allNumeric = AVAILABLE_SIZES.numeric;
+                        setSelectedSizes([...new Set([...selectedSizes, ...allNumeric])]);
+                      }}
+                      className="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                    >
+                      Select All Numeric
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSizes(selectedSizes.filter(s => !AVAILABLE_SIZES.numeric.includes(s)));
+                      }}
+                      className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                    >
+                      Clear Numeric
+                    </button>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                    <div className="grid grid-cols-10 gap-2">
+                      {AVAILABLE_SIZES.numeric.map((size) => (
+                        <label key={size} className="flex items-center space-x-1 cursor-pointer">
+                          <Checkbox
+                            checked={selectedSizes.includes(size)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedSizes([...selectedSizes, size])
+                              } else {
+                                setSelectedSizes(selectedSizes.filter((s) => s !== size))
+                              }
+                            }}
+                          />
+                          <span className="text-xs">{size}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -702,7 +737,7 @@ function AdminDashboardContent(): ReactElement {
                     </div>
                     <div>
                       <p className="text-sm text-neutral-600">{t("admin.stats.totalRevenue")}</p>
-                      <p className="text-2xl font-bold text-neutral-900">${stats.totalRevenue.toFixed(1)}</p>
+                      <p className="text-2xl font-bold text-neutral-900">₪{stats.totalRevenue.toFixed(1)}</p>
                     </div>
                   </div>
                 </div>
@@ -717,7 +752,7 @@ function AdminDashboardContent(): ReactElement {
                       <div>
                         <p className="font-medium">{order.customerName}</p>
                         <p className="text-sm text-neutral-600">
-                          {order.id} • ${order.total}
+                          {order.id} • ₪{order.total}
                         </p>
                       </div>
                       <Badge
@@ -763,7 +798,7 @@ function AdminDashboardContent(): ReactElement {
                       />
                     </div>
                     <h3 className="font-medium mb-2">{product.name}</h3>
-                    <p className="text-sm text-neutral-600 mb-2">${product.price}</p>
+                    <p className="text-sm text-neutral-600 mb-2">₪{product.price}</p>
                     <p className="text-xs text-neutral-500 mb-3">
                       {product.category} - {product.subcategory}
                     </p>
@@ -871,7 +906,7 @@ function AdminDashboardContent(): ReactElement {
                             <div className="text-right space-y-3">
                               <div className="bg-white rounded-lg p-4 shadow-sm border border-neutral-200">
                                 <p className="text-sm text-neutral-600 mb-1">Total Amount</p>
-                                <p className="text-3xl font-bold text-green-600">${order.total.toFixed(2)}</p>
+                                <p className="text-3xl font-bold text-green-600">₪{order.total.toFixed(2)}</p>
                               </div>
                               <Select
                                 value={order.status}
@@ -956,7 +991,7 @@ function AdminDashboardContent(): ReactElement {
                                       <div className="flex items-center gap-4 text-sm text-neutral-600">
                                         <span>
                                           {t("admin.orders.unitPrice")}: {" "}
-                                          <span className="font-semibold text-neutral-900">${item.product_price}</span>
+                                          <span className="font-semibold text-neutral-900">₪{item.product_price}</span>
                                         </span>
                                         <span>•</span>
                                         <span>
@@ -969,11 +1004,11 @@ function AdminDashboardContent(): ReactElement {
                                     <div className="text-right space-y-1">
                                       <div className="bg-green-50 rounded-lg p-3 border border-green-200">
                                         <p className="text-xs text-green-600 mb-1">{t("admin.orders.subtotal")}</p>
-                                        <p className="text-xl font-bold text-green-700">${item.subtotal.toFixed(2)}</p>
+                                        <p className="text-xl font-bold text-green-700">₪{item.subtotal.toFixed(2)}</p>
                                       </div>
                                       {item.quantity > 1 && (
                                         <p className="text-xs text-neutral-500">
-                                          ${item.product_price} × {item.quantity}
+                                          ₪{item.product_price} × {item.quantity}
                                         </p>
                                       )}
                                     </div>
@@ -985,7 +1020,7 @@ function AdminDashboardContent(): ReactElement {
                           <div className="mt-6 pt-6 border-t border-neutral-200">
                             <div className="flex justify-between items-center bg-neutral-50 rounded-lg p-4">
                               <span className="text-lg font-semibold text-neutral-900">{t("admin.orders.orderTotal")}</span>
-                              <span className="text-2xl font-bold text-green-600">${order.total.toFixed(2)}</span>
+                              <span className="text-2xl font-bold text-green-600">₪{order.total.toFixed(2)}</span>
                             </div>
                           </div>
                         </div>
@@ -1023,7 +1058,7 @@ function AdminDashboardContent(): ReactElement {
                       />
                       <div className="flex-1">
                         <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-neutral-600">${product.price}</p>
+                        <p className="text-sm text-neutral-600">{product.price}</p>
                       </div>
                     </label>
                   ))}
@@ -1065,7 +1100,7 @@ function AdminDashboardContent(): ReactElement {
                     <div>
                       <p className="text-sm text-neutral-600">{t("admin.delivered.revenue")}</p>
                       <p className="text-2xl font-bold text-neutral-900">
-                        $
+                        ₪
                         {orders
                           .filter((order) => order.status === "delivered")
                           .reduce((sum, order) => sum + order.total, 0)
@@ -1083,7 +1118,7 @@ function AdminDashboardContent(): ReactElement {
                     <div>
                       <p className="text-sm text-neutral-600">{t("admin.delivered.estimatedProfit")}</p>
                       <p className="text-2xl font-bold text-neutral-900">
-                        $
+                        ₪
                         {(
                           orders
                             .filter((order) => order.status === "delivered")
@@ -1138,10 +1173,10 @@ function AdminDashboardContent(): ReactElement {
                             <div className="text-right space-y-2">
                               <div className="bg-white rounded-lg p-3 shadow-sm border border-green-200">
                                 <p className="text-sm text-neutral-600">Revenue</p>
-                                <p className="text-xl font-bold text-green-600">${order.total.toFixed(1)}</p>
+                                <p className="text-xl font-bold text-green-600">₪{order.total.toFixed(1)}</p>
                               </div>
                               <div className="bg-green-100 rounded-lg p-2 border border-green-200">
-                                <p className="text-xs text-green-700">Est. Profit: ${(order.total * 0.7).toFixed(1)}</p>
+                                <p className="text-xs text-green-700">Est. Profit: ₪{(order.total * 0.7).toFixed(1)}</p>
                               </div>
                             </div>
                           </div>
@@ -1187,9 +1222,9 @@ function AdminDashboardContent(): ReactElement {
                                       </div>
                                     </div>
                                     <div className="text-right">
-                                      <p className="font-bold text-sm text-green-600">${item.subtotal.toFixed(2)}</p>
+                                      <p className="font-bold text-sm text-green-600">₪{item.subtotal.toFixed(2)}</p>
                                       <p className="text-xs text-green-500">
-                                        ~${(item.subtotal * 0.7).toFixed(1)} profit
+                                        ~₪{(item.subtotal * 0.7).toFixed(1)} profit
                                       </p>
                                     </div>
                                   </div>
@@ -1199,6 +1234,129 @@ function AdminDashboardContent(): ReactElement {
                         </div>
                       </div>
                     ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Out of Stock Tab */}
+          {activeTab === "out-of-stock" && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">
+                  {language === 'ar' ? 'المنتجات نفدت من المخزون' : 'Out of Stock Products'}
+                </h2>
+                <div className="text-sm text-gray-600">
+                  {language === 'ar' 
+                    ? `${products.filter(p => !p.inStock).length} منتج نفذ من المخزون`
+                    : `${products.filter(p => !p.inStock).length} products out of stock`
+                  }
+                </div>
+              </div>
+
+              {products.filter(p => !p.inStock).length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {language === 'ar' ? 'جميع المنتجات متوفرة!' : 'All products are in stock!'}
+                  </h3>
+                  <p className="text-gray-500">
+                    {language === 'ar' 
+                      ? 'لا توجد منتجات نفدت من المخزون حالياً'
+                      : 'No products are currently out of stock'
+                    }
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'ar' ? 'المنتج' : 'Product'}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'ar' ? 'الفئة' : 'Category'}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'ar' ? 'السعر' : 'Price'}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'ar' ? 'الكمية المتبقية' : 'Stock Quantity'}
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {language === 'ar' ? 'الإجراءات' : 'Actions'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {products.filter(p => !p.inStock).map((product) => (
+                          <tr key={product.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <img
+                                  className="h-12 w-12 rounded-lg object-cover"
+                                  src={product.image || "/placeholder.svg"}
+                                  alt={product.name}
+                                />
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {product.name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    ID: {product.id}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {language === 'ar' 
+                                  ? CATEGORIES[product.category as keyof typeof CATEGORIES]?.nameAr
+                                  : CATEGORIES[product.category as keyof typeof CATEGORIES]?.name
+                                }
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {product.subcategory}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">₪{product.price}</div>
+                              {product.originalPrice && product.originalPrice !== product.price && (
+                                <div className="text-sm text-gray-500 line-through">₪{product.originalPrice}</div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {product.stockQuantity || 0} {language === 'ar' ? 'قطعة' : 'left'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                              <Button
+                                onClick={() => setEditingProduct(product)}
+                                size="sm"
+                                variant="outline"
+                                className="text-blue-600 hover:text-blue-500"
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                {language === 'ar' ? 'تعديل المخزون' : 'Restock'}
+                              </Button>
+                              <Button
+                                onClick={() => deleteProduct(product.id)}
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-500 ml-2"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                {language === 'ar' ? 'حذف' : 'Delete'}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>

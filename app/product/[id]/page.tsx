@@ -207,11 +207,11 @@ export default function ProductDetailPage() {
 
               {/* Price */}
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-3xl font-bold text-neutral-900">${product.price}</span>
+                <span className="text-3xl font-bold text-neutral-900">₪{product.price}</span>
                 {hasDiscount && (
                   <>
-                    <span className="text-xl text-neutral-500 line-through">${product.originalPrice}</span>
-                    <Badge className="bg-red-500 text-white">Save ${product.originalPrice! - product.price}</Badge>
+                    <span className="text-xl text-neutral-500 line-through">₪{product.originalPrice}</span>
+                    <Badge className="bg-red-500 text-white">Save ₪{product.originalPrice! - product.price}</Badge>
                   </>
                 )}
               </div>
@@ -305,7 +305,7 @@ export default function ProductDetailPage() {
                   </motion.button>
                 </div>
                 <span className="text-sm text-neutral-600">
-                  Total: <span className="font-bold">${(product.price * quantity).toFixed(2)}</span>
+                  Total: <span className="font-bold">₪{(product.price * quantity).toFixed(2)}</span>
                 </span>
               </div>
             </div>

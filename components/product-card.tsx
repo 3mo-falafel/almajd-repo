@@ -88,9 +88,9 @@ export function ProductCard({ product, onQuickLook }: ProductCardProps) {
               <span className="text-[10px] sm:text-xs text-white/70 line-through drop-shadow-sm">{formatCurrency(product.originalPrice)}</span>
             )}
           </div>
-          {typeof product.lowStockLeft === "number" && product.lowStockLeft > 0 && (
+          {product.inStock && product.stockQuantity < 5 && (
             <p className="text-[11px] sm:text-xs md:text-sm font-semibold text-red-300 md:text-red-400 mb-2">
-              Only {product.lowStockLeft} left
+              Only {product.stockQuantity} left
             </p>
           )}
           {!product.inStock && (

@@ -14,6 +14,8 @@ export interface Product {
   colors: { name: string; color: string; image?: string }[]
   inStock: boolean
   isOffer?: boolean
+  /** Current stock quantity (automatically decreases with purchases) */
+  stockQuantity: number
   /** Optional label-only remaining stock number (does NOT auto-decrease) */
   lowStockLeft?: number
 }
@@ -38,6 +40,7 @@ export const CATEGORIES = {
       { id: "underwear", name: "Underwear", nameAr: "ملابس داخلية" },
       { id: "hats", name: "Hats", nameAr: "قبعات" },
       { id: "slippers", name: "Slippers", nameAr: "شباشب" },
+      { id: "pajama-sets", name: "Pajama Sets", nameAr: "بيجامات" },
     ],
   },
   women: {
@@ -52,6 +55,7 @@ export const CATEGORIES = {
       { id: "jackets", name: "Jackets", nameAr: "جاكيتات" },
       { id: "boots", name: "Boots", nameAr: "أحذية" },
       { id: "slippers", name: "Slippers", nameAr: "شباشب" },
+      { id: "pajama-sets", name: "Pajama Sets", nameAr: "بيجامات" },
     ],
   },
   boys: {
@@ -66,6 +70,7 @@ export const CATEGORIES = {
       { id: "underwear", name: "Underwear", nameAr: "ملابس داخلية" },
       { id: "hats", name: "Hats", nameAr: "قبعات" },
       { id: "slippers", name: "Slippers", nameAr: "شباشب" },
+      { id: "pajama-sets", name: "Pajama Sets", nameAr: "بيجامات" },
     ],
   },
   girls: {
@@ -79,6 +84,7 @@ export const CATEGORIES = {
       { id: "jackets", name: "Jackets", nameAr: "جاكيتات" },
       { id: "boots", name: "Boots", nameAr: "أحذية" },
       { id: "slippers", name: "Slippers", nameAr: "شباشب" },
+      { id: "pajama-sets", name: "Pajama Sets", nameAr: "بيجامات" },
     ],
   },
 } as const

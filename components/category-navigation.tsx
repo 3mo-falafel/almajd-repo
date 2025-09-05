@@ -78,6 +78,13 @@ const AbayaIcon = () => (
     <path d="M10 3h4l3 5-3 13H10L7 8l3-5Z" />
   </svg>
 )
+const PajamaIcon = () => (
+  <svg {...baseIconProps}>
+    <path d="M8 2h8v4l-2 2v12H10V8l-2-2V2Z" />
+    <path d="M6 6h4v2H6Z" />
+    <path d="M14 6h4v2h-4Z" />
+  </svg>
+)
 const FallbackIcon = () => (
   <svg {...baseIconProps}>
     <circle cx="12" cy="12" r="9" />
@@ -96,6 +103,7 @@ const SUBCATEGORY_ICONS: Record<string, React.FC> = {
   slippers: SlippersIcon,
   dress: DressIcon,
   abaya: AbayaIcon,
+  "pajama-sets": PajamaIcon,
 }
 
 export function CategoryNavigation({

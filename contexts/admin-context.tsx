@@ -56,7 +56,7 @@ const AdminContext = createContext<AdminContextType | null>(null)
 
 export const AVAILABLE_SIZES = {
   clothing: ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL", "6XL"],
-  numeric: ["20", "22", "24", "26", "28", "30", "32", "34", "36", "38", "40", "42", "44", "46", "48", "50"],
+  numeric: Array.from({ length: 60 }, (_, i) => (i + 1).toString()),
 }
 
 export const AVAILABLE_COLORS = [

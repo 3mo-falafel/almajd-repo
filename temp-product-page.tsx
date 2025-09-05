@@ -11,22 +11,16 @@ import { Separator } from "@/components/ui/separator"
 import { useCart } from "@/contexts/cart-context"
 import { useLanguage } from "@/contexts/language-context"
 
-interface Product {
+interface ProductData {
   id: string
   name: string
-  name_ar: string
-  category: string
-  category_ar: string
   price: number
   sale_price?: number
-  description: string
-  description_ar: string
   image_url: string
   gallery_images?: string[]
-  materials: string[]
-  badge?: string
+  description: string
   inStock: boolean
-  isOffer: boolean
+  stockQuantity: number
   lowStockLeft?: number
 }
 
@@ -166,11 +160,11 @@ export default function ProductPage() {
             {/* Price */}
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold text-gray-900">
-                ${currentPrice.toFixed(2)}
+                ₪{currentPrice.toFixed(2)}
               </span>
               {originalPrice && (
                 <span className="text-xl text-gray-500 line-through">
-                  ${originalPrice.toFixed(2)}
+                  ₪{originalPrice.toFixed(2)}
                 </span>
               )}
             </div>
@@ -186,11 +180,11 @@ export default function ProductPage() {
                   {language === "ar" ? "غير متوفر" : "Out of Stock"}
                 </Badge>
               )}
-              {product.lowStockLeft && product.lowStockLeft <= 5 && (
+              {product.inStock && product.stockQuantity < 5 && (
                 <span className="text-sm text-orange-600">
                   {language === "ar" 
-                    ? `فقط ${product.lowStockLeft} قطع متبقية`
-                    : `Only ${product.lowStockLeft} left in stock`
+                    ? `فقط ${product.stockQuantity} قطع متبقية`
+                    : `Only ${product.stockQuantity} left in stock`
                   }
                 </span>
               )}
@@ -272,7 +266,7 @@ export default function ProductPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <Truck className="w-5 h-5" />
-                <span>{language === "ar" ? "شحن مجاني للطلبات فوق $50" : "Free shipping on orders over $50"}</span>
+                <span>{language === "ar" ? "شحن مجاني للطلبات فوق ₪200" : "Free shipping on orders over ₪200"}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <Shield className="w-5 h-5" />

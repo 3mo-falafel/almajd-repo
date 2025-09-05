@@ -143,7 +143,7 @@ export function CollectionStrip() {
                       <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 via-black/30 to-transparent">
                         <h3 className={`text-white text-sm sm:text-base font-semibold mb-1 ${!isRTL && "tracking-wide"}`}>{product.name}</h3>
                         {product.price != null && (
-                          <p className="text-white/90 text-xs sm:text-sm font-medium">${product.price}</p>
+                          <p className="text-white/90 text-xs sm:text-sm font-medium">₪{product.price}</p>
                         )}
                       </div>
                     </div>
